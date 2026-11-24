@@ -634,8 +634,8 @@ export default function SettingsView({ onNotify }) {
             </div>
 
             {/* Modal Form Body */}
-            <form onSubmit={handleSaveGroup} className="flex flex-col">
-              <div className="p-6 space-y-4 overflow-y-auto overscroll-contain max-h-[calc(90vh-140px)]">
+            <form onSubmit={handleSaveGroup} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
                 {/* Group Name Input */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -880,7 +880,7 @@ export default function SettingsView({ onNotify }) {
               </div>
 
               {/* Modal Actions Footer */}
-              <div className="px-6 py-4 bg-slate-50/90 border-t border-slate-100 flex items-center justify-end gap-2.5 shrink-0 rounded-b-2xl">
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-end gap-2.5 shrink-0 z-10">
                 <button
                   type="button"
                   onClick={() => setShowGroupModal(false)}
