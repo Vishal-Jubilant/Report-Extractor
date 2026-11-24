@@ -9,7 +9,7 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <div className="flex h-screen w-screen overflow-hidden bg-white font-sans text-slate-900">
+      <div className="flex h-full w-full overflow-hidden bg-white font-sans text-slate-900">
         
         {/* Docked Edge-to-Edge Fullscreen Sidebar */}
         <Sidebar 

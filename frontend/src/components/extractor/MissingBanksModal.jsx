@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   AlertTriangle, 
   Check, 
@@ -36,9 +37,9 @@ export default function MissingBanksModal({
     }
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="missing-banks-modal-title"
@@ -173,6 +174,7 @@ export default function MissingBanksModal({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

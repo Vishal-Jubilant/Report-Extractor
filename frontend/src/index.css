@@ -5,11 +5,28 @@
 @layer base {
   html {
     font-size: 16.8px;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
   body {
     background-color: #fafafa;
     color: #0f172a;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
 }
 

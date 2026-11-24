@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Plus, 
   Search, 
@@ -594,9 +595,9 @@ export default function SettingsView({ onNotify }) {
       </div>
 
       {/* 1. MODAL: Add / Edit Group & Enterprise Bank Requirements */}
-      {showGroupModal && (
+      {showGroupModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
           role="dialog"
           aria-modal="true"
           aria-labelledby="group-modal-title"
@@ -921,13 +922,14 @@ export default function SettingsView({ onNotify }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 2. MODAL: Manage & Add Enterprise */}
-      {showAddEnterpriseModal && (
+      {showAddEnterpriseModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-enterprise-modal-title"
@@ -1063,13 +1065,14 @@ export default function SettingsView({ onNotify }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 3. MODAL: Manage & Add Bank */}
-      {showAddBankModal && (
+      {showAddBankModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-bank-modal-title"
@@ -1182,7 +1185,8 @@ export default function SettingsView({ onNotify }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
