@@ -533,10 +533,10 @@ export default function SettingsView({ onNotify }) {
                         const showPrefix = grp.enterprises.length > 1;
 
                         return (
-                          <div key={eIdx} className="flex items-center gap-2.5 min-h-[26px]">
+                          <div key={eIdx} className="flex items-center gap-2 min-h-[26px]">
                             {showPrefix && (
-                              <span className="inline-flex items-center justify-center w-14 px-1.5 py-0.5 rounded-md font-mono font-bold text-[11px] bg-slate-100 text-slate-700 border border-slate-200/90 shrink-0">
-                                {entCode}
+                              <span className="w-12 font-mono font-bold text-xs text-slate-500 shrink-0 text-left select-none">
+                                {entCode}:
                               </span>
                             )}
                             <div className="flex flex-wrap items-center gap-1.5">
@@ -544,9 +544,8 @@ export default function SettingsView({ onNotify }) {
                                 ent.banks.map((b) => (
                                   <span
                                     key={b}
-                                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-mono font-semibold bg-slate-100 text-slate-800 border border-slate-200/90 shadow-2xs"
+                                    className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200/90 shadow-2xs"
                                   >
-                                    <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
                                     {b}
                                   </span>
                                 ))
