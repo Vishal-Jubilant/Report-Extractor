@@ -52,8 +52,8 @@ def test_schema_and_tables():
     print(f"  enterprises columns: {ent_cols}")
     assert "code" in ent_cols and "name" in ent_cols
     ent_indexes = inspector.get_indexes("enterprises")
-    # Verify NO redundant index on code (only the unique constraint backing index exists, no ix_*)
-    redundant_ent_indexes = [idx["name"] for idx in ent_indexes if idx["name"] != "enterprises_code_key" and not idx.get("primary_key")]
+    # Verify NO redundant index on code (only the unique constraint backing index exists, and ix_enterprises_group_name)
+    redundant_ent_indexes = [idx["name"] for idx in ent_indexes if idx["name"] not in ("enterprises_code_key", "ix_enterprises_group_name") and not idx.get("primary_key")]
     print(f"  enterprises redundant non-unique indexes: {redundant_ent_indexes}")
     assert len(redundant_ent_indexes) == 0, f"Redundant index found on enterprises: {redundant_ent_indexes}"
     print("  [SUCCESS] enterprises constraints & non-redundant indexing verified.")

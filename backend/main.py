@@ -486,6 +486,19 @@ def add_bank(data: BankRequest):
     return {"message": f"Bank '{b_name}' added successfully"}
 
 
+@app.delete("/api/banks/{name}", response_model=SimpleMessageResponse)
+def delete_bank(name: str):
+    _reload_config()
+    b_name = name.strip().upper()
+    with get_worker_session() as session:
+        bank = session.query(Bank).filter_by(name=b_name).first()
+        if bank:
+            session.delete(bank)
+            session.commit()
+            return {"message": f"Bank '{b_name}' deleted successfully"}
+    return {"message": f"Bank '{b_name}' removed"}
+
+
 @app.get("/api/enterprises/list")
 def get_distinct_enterprises():
     _reload_config()

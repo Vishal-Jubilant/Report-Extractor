@@ -310,13 +310,32 @@ export default function SettingsView({ onNotify }) {
       if (!res.ok) throw new Error(data.detail || 'Failed to add bank');
 
       notifyFn(`Bank "${bName}" added successfully!`, 'success');
-      setShowAddBankModal(false);
       setNewBankName('');
       fetchSupportedBanks();
     } catch (err) {
       notifyFn(err.message || 'Error adding bank', 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteBank = async (bName) => {
+    const defaultBanks = ["ICICI", "KOTAK", "AXIS", "IDBI", "IDFC"];
+    if (defaultBanks.includes(bName)) {
+      notifyFn(`"${bName}" is a core parser bank and cannot be deleted`, 'warning');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to remove bank "${bName}"?`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/banks/${encodeURIComponent(bName)}`, { method: 'DELETE' });
+      if (res.ok) {
+        notifyFn(`Bank "${bName}" removed`, 'success');
+        fetchSupportedBanks();
+      }
+    } catch (err) {
+      notifyFn('Error deleting bank', 'error');
     }
   };
 
@@ -771,7 +790,7 @@ export default function SettingsView({ onNotify }) {
         </div>
       )}
 
-      {/* 2. MODAL: Add New Enterprise */}
+      {/* 2. MODAL: Manage & Add Enterprise */}
       {showAddEnterpriseModal && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
@@ -783,19 +802,20 @@ export default function SettingsView({ onNotify }) {
           }}
         >
           <div 
-            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col"
+            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Modal Header */}
             <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-100">
               <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
                 <Building2 className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
               <div className="flex-1 min-w-0 pr-2">
                 <h2 id="add-enterprise-modal-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                  Add New Enterprise
+                  Manage Enterprises
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                  Register a new enterprise code and name.
+                  View registered enterprises or register a new enterprise entity.
                 </p>
               </div>
               <button 
@@ -807,60 +827,98 @@ export default function SettingsView({ onNotify }) {
               </button>
             </div>
 
-            <form onSubmit={handleQuickAddEnterprise} className="p-6 space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Enterprise Code <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. SS, SN, or JC"
-                  value={newEntCode}
-                  onChange={(e) => setNewEntCode(e.target.value.toUpperCase())}
-                  required
-                  maxLength={15}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
-                />
-                <p className="text-[11px] text-slate-400">Short account code used in statements</p>
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
+              {/* Section 1: Registered Enterprises List */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Registered Enterprises ({availableEnterprises.length})
+                  </label>
+                  <span className="text-[11px] text-slate-400">Available in Group Dropdowns</span>
+                </div>
+                
+                <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl max-h-40 overflow-y-auto space-y-1.5">
+                  {availableEnterprises.length === 0 ? (
+                    <p className="text-xs text-slate-400 py-2 text-center">No enterprises registered yet.</p>
+                  ) : (
+                    availableEnterprises.map((ent) => (
+                      <div 
+                        key={ent.code}
+                        className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-slate-200/80 shadow-2xs text-xs"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="px-2 py-0.5 rounded font-mono font-bold bg-slate-900 text-white text-[11px] tracking-wider shrink-0">
+                            {ent.code}
+                          </span>
+                          <span className="font-semibold text-slate-800 truncate">
+                            {ent.name || ent.code}
+                          </span>
+                        </div>
+                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Enterprise Full Name / Holder Name
+              {/* Section 2: Add New Enterprise Form */}
+              <form onSubmit={handleQuickAddEnterprise} className="space-y-3 pt-3 border-t border-slate-100">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Add New Enterprise
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. SUDHAKAR S or JC ENTERPRISE"
-                  value={newEntName}
-                  onChange={(e) => setNewEntName(e.target.value.toUpperCase())}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
-                />
-                <p className="text-[11px] text-slate-400">Full registered company or account holder name</p>
-              </div>
+                
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-semibold text-slate-600">Enterprise Code <span className="text-rose-500">*</span></span>
+                  <input
+                    type="text"
+                    placeholder="e.g. SS, SN, or JC"
+                    value={newEntCode}
+                    onChange={(e) => setNewEntCode(e.target.value.toUpperCase())}
+                    required
+                    maxLength={15}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
+                  />
+                </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setShowAddEnterpriseModal(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !newEntCode.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40"
-                >
-                  <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
-                  <span>{isSubmitting ? 'Saving...' : 'Save Enterprise'}</span>
-                </button>
-              </div>
-            </form>
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-semibold text-slate-600">Enterprise Full Name / Holder Name</span>
+                  <input
+                    type="text"
+                    placeholder="e.g. SUDHAKAR S or JC ENTERPRISE"
+                    value={newEntName}
+                    onChange={(e) => setNewEntName(e.target.value.toUpperCase())}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
+                  />
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || !newEntCode.trim()}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{isSubmitting ? 'Adding...' : 'Add Enterprise'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setShowAddEnterpriseModal(false)}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer shadow-2xs"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* 3. MODAL: Add New Bank */}
+      {/* 3. MODAL: Manage & Add Bank */}
       {showAddBankModal && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
@@ -872,19 +930,20 @@ export default function SettingsView({ onNotify }) {
           }}
         >
           <div 
-            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col"
+            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Modal Header */}
             <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-100">
               <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
                 <Landmark className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
               <div className="flex-1 min-w-0 pr-2">
                 <h2 id="add-bank-modal-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                  Add New Bank
+                  Manage Bank Statements
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                  Register a new bank statement requirement option.
+                  View configured banks or register a new statement requirement option.
                 </p>
               </div>
               <button 
@@ -896,41 +955,90 @@ export default function SettingsView({ onNotify }) {
               </button>
             </div>
 
-            <form onSubmit={handleQuickAddBank} className="p-6 space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                  Bank Name <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. HDFC, CANARA, SBI, PNB..."
-                  value={newBankName}
-                  onChange={(e) => setNewBankName(e.target.value.toUpperCase())}
-                  required
-                  maxLength={20}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
-                />
-                <p className="text-[11px] text-slate-400">Bank identifier for statement requirements</p>
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
+              {/* Section 1: Configured Banks List */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Configured Banks ({supportedBanks.length})
+                  </label>
+                  <span className="text-[11px] text-slate-400">Core Parsers & Custom Banks</span>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl max-h-48 overflow-y-auto flex flex-wrap gap-2">
+                  {supportedBanks.map((bName) => {
+                    const isCore = ["ICICI", "KOTAK", "AXIS", "IDBI", "IDFC"].includes(bName);
+                    return (
+                      <div
+                        key={bName}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider transition-all shadow-2xs ${
+                          isCore 
+                            ? 'bg-white border border-slate-200 text-slate-800' 
+                            : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                        }`}
+                      >
+                        <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                        <span>{bName}</span>
+                        {isCore ? (
+                          <span className="text-[10px] font-sans font-medium text-slate-400 bg-slate-100 px-1 py-0.5 rounded">Core</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBank(bName)}
+                            className="ml-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer p-0.5 rounded hover:bg-rose-50"
+                            title={`Delete custom bank ${bName}`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setShowAddBankModal(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !newBankName.trim()}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40"
-                >
-                  <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
-                  <span>{isSubmitting ? 'Saving...' : 'Save Bank'}</span>
-                </button>
-              </div>
-            </form>
+              {/* Section 2: Add New Bank Form */}
+              <form onSubmit={handleQuickAddBank} className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Add New Bank Name <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. HDFC, CANARA, SBI, PNB, UNION..."
+                      value={newBankName}
+                      onChange={(e) => setNewBankName(e.target.value.toUpperCase())}
+                      maxLength={20}
+                      required
+                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || !newBankName.trim()}
+                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40 shrink-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>{isSubmitting ? 'Adding...' : 'Add Bank'}</span>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Once registered, this bank will appear in enterprise bank statement options across all groups.
+                  </p>
+                </div>
+              </form>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setShowAddBankModal(false)}
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer shadow-2xs"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
