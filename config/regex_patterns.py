@@ -14,8 +14,8 @@ Bank-wise regex. There are two per-bank dicts:
    * If a row is selected but no regex matches -> the app displays a red "NO_REGEX" box.
 """
 
-# Transaction type start:  RTGS/  RTGS-  RTGSINW...   NEFT/  NEFT-  NEFTINW...   IFT-   INF/
-_TXN = r"(?:RTGS|NEFT|IFT|INF)(?:INW|\s*[/-])"
+# Transaction type start:  RTGS/  RTGS-  RTGS:  RTGSINW...   NEFT/  NEFT-  NEFT:  NEFTINW...   IFT-   INF/
+_TXN = r"(?:RTGS|NEFT|IFT|INF)(?:INW|\s*[/:-])"
 
 ROW_START = {
     # DESCRIPTION column start check
@@ -39,6 +39,8 @@ ROW_REF_START = {
 
 BANK_PATTERNS = {
     "ICICI": [
+        # RTGS:ICICR5202611 2100740872/UTI BANK LTD/SHANTHI FOOD INDUSTRIES
+        r"(?i)^RTGS:\s*(?:[^/]+/)+([^/]+?)\s*$",
         # RTGS/ICICR.../SBIN0015825/81090561/LAKSHMIDEVI/LAKSHMIDEVIMOTOR   (last segment = name)
         r"(?i)^RTGS/(?:[^/]+/)+([^/]+)$",
         # RTGS-KKBKR22026102325454166-SURGECAPITALSOLUTIONS-9749176601-KKBK0000958
@@ -46,7 +48,6 @@ BANK_PATTERNS = {
         r"(?i)^RTGS-[A-Z]{4}R\d+-([^\s-]+)",
         # NEFT-IDFB6300M2390441-ALOK INFOTECH--10095642705-IDFB0080133
         r"(?i)^NEFT-[A-Z0-9]+-(.+?)-[^-]*-\d{6,}-[A-Z]{4}0\w{6}$",
-
         # INF/NEFT/IN42630057499042/RATN0000182/81104049/SIVARAMANSUDHAKAR/EMBASSYOFBR
         r"(?i)^INF/NEFT/[^/]+/[^/]+/\d+\s*/\s*([^/]+)",
         # INF/NEFT/IN42630057807402/KKBK0000490/ASKOTAK/ASCENDSOLUTIONS   (without acc no)
