@@ -199,6 +199,7 @@ export default function SettingsView({ onNotify }) {
 
       setShowEnterpriseModal(false);
       fetchEnterprises();
+      fetchSettings();
     } catch (err) {
       notifyFn(err.message || 'Error saving enterprise mapping', 'error');
     } finally {
@@ -220,6 +221,7 @@ export default function SettingsView({ onNotify }) {
 
       notifyFn(`Deleted enterprise "${code}" successfully`, 'success');
       fetchEnterprises();
+      fetchSettings();
     } catch (err) {
       notifyFn(err.message || 'Error deleting enterprise', 'error');
     }

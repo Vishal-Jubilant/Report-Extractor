@@ -469,6 +469,8 @@ def create_or_update_enterprise(data: EnterpriseModel):
         raise HTTPException(status_code=400, detail="At least one bank must be selected")
 
     saved_ent = enterprise_banks.create_or_update_enterprise(code, name, banks)
+    # Auto-sync: automatically register holder name -> code in account_codes
+    account_codes.add_account_code(name, code)
     _reload_config()
     return {"message": f"Enterprise '{code}' saved successfully", "enterprise": saved_ent}
 
@@ -487,6 +489,8 @@ def update_enterprise(code: str, data: EnterpriseUpdateModel):
         raise HTTPException(status_code=400, detail="At least one bank must be selected")
 
     updated_ent = enterprise_banks.create_or_update_enterprise(code_key, name, banks)
+    # Auto-sync: update holder name -> code in account_codes
+    account_codes.add_account_code(name, code_key)
     _reload_config()
     return {"message": f"Enterprise '{code_key}' updated successfully", "enterprise": updated_ent}
 
@@ -497,6 +501,13 @@ def delete_enterprise(code: str):
     code_key = code.strip().upper()
     deleted = enterprise_banks.delete_enterprise(code_key)
     if deleted:
+        # Also clean up associated account_codes for this enterprise code
+        from backend.database import get_worker_session
+        from backend.database.models import AccountCode
+        with get_worker_session() as session:
+            session.query(AccountCode).filter_by(account_code=code_key).delete()
+            session.commit()
+        account_codes.HOLDER_TO_CODE = account_codes.load_account_codes()
         _reload_config()
         return {"message": f"Enterprise '{code_key}' deleted successfully"}
     raise HTTPException(status_code=404, detail=f"Enterprise '{code_key}' not found")
