@@ -789,29 +789,6 @@ export default function SettingsView({ onNotify }) {
                             </div>
                           )}
                         </div>
-
-                        {/* Selected Banks Removable Chips */}
-                        {ent.banks.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {ent.banks.map((b) => (
-                              <span
-                                key={b}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-slate-900 text-white shadow-2xs"
-                              >
-                                <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
-                                <span>{b}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleEnterpriseBank(idx, b)}
-                                  className="ml-1 text-slate-400 hover:text-rose-400 cursor-pointer p-0.5 rounded transition-colors"
-                                  title={`Remove ${b}`}
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))}
