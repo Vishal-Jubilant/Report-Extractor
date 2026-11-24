@@ -393,8 +393,9 @@ export default function SettingsView({ onNotify }) {
           </div>
 
           <button
+            type="button"
             onClick={openAddEnterpriseModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
           >
             <Plus className="w-4 h-4" />
             Add Enterprise Banks
@@ -594,7 +595,7 @@ export default function SettingsView({ onNotify }) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {isSubmitting ? 'Saving...' : 'Save Mapping'}
