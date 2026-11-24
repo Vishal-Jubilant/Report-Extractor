@@ -6,7 +6,6 @@ import {
   Download 
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
-import ExtractorEnterpriseBar from './extractor/ExtractorEnterpriseBar';
 import ExtractorDropzone from './extractor/ExtractorDropzone';
 import MissingBanksModal from './extractor/MissingBanksModal';
 import TransactionPanel from './extractor/TransactionPanel';
@@ -315,14 +314,6 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
           </div>
         )}
       </div>
-
-      {/* Target Enterprise Selector & Requirements Banner */}
-      <ExtractorEnterpriseBar
-        enterprises={enterprises}
-        selectedEnterprise={selectedEnterprise}
-        onSelectEnterprise={setSelectedEnterprise}
-        onNavigateToSettings={onNavigateToSettings}
-      />
 
       {/* Upload Dropzone & File Management */}
       <ExtractorDropzone
