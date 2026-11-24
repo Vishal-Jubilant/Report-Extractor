@@ -11,7 +11,8 @@ import {
   X, 
   Info,
   ChevronDown,
-  Lock
+  Lock,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -44,6 +45,9 @@ export default function SettingsView({ onNotify }) {
   // 3. Add Bank Quick Modal State
   const [showAddBankModal, setShowAddBankModal] = useState(false);
   const [newBankName, setNewBankName] = useState('');
+
+  // 4. Custom Confirmation Modal State (Replaces native window.confirm)
+  const [confirmAction, setConfirmAction] = useState(null);
 
   // Dropdown open states for Group modal
   const [openEnterpriseDropdownIdx, setOpenEnterpriseDropdownIdx] = useState(null);
@@ -107,14 +111,15 @@ export default function SettingsView({ onNotify }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        if (showAddBankModal) setShowAddBankModal(false);
+        if (confirmAction) setConfirmAction(null);
+        else if (showAddBankModal) setShowAddBankModal(false);
         else if (showAddEnterpriseModal) setShowAddEnterpriseModal(false);
         else if (showGroupModal) setShowGroupModal(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showGroupModal, showAddEnterpriseModal, showAddBankModal]);
+  }, [showGroupModal, showAddEnterpriseModal, showAddBankModal, confirmAction]);
 
   // Open modal to Add Group & Enterprises
   const openAddGroupModal = () => {
@@ -255,21 +260,26 @@ export default function SettingsView({ onNotify }) {
   };
 
   // Group Form: Delete Group
-  const handleDeleteGroup = async (grpName) => {
-    if (!window.confirm(`Are you sure you want to delete group "${grpName}"? (Associated enterprises will remain preserved in the system)`)) {
-      return;
-    }
-    try {
-      const res = await fetch(`/api/groups/${encodeURIComponent(grpName)}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Failed to delete group');
+  const handleDeleteGroup = (grpName) => {
+    setConfirmAction({
+      title: 'Delete Group',
+      message: `Are you sure you want to delete group "${grpName}"?`,
+      subtext: 'Associated enterprises will remain preserved in the system.',
+      confirmLabel: 'Delete Group',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/groups/${encodeURIComponent(grpName)}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || 'Failed to delete group');
 
-      notifyFn(`Deleted group "${grpName}" successfully`, 'success');
-      fetchGroups();
-      fetchAvailableEnterprises();
-    } catch (err) {
-      notifyFn(err.message || 'Error deleting group', 'error');
-    }
+          notifyFn(`Deleted group "${grpName}" successfully`, 'success');
+          fetchGroups();
+          fetchAvailableEnterprises();
+        } catch (err) {
+          notifyFn(err.message || 'Error deleting group', 'error');
+        }
+      }
+    });
   };
 
   // Quick Modal: Add Enterprise
@@ -303,25 +313,30 @@ export default function SettingsView({ onNotify }) {
     }
   };
 
-  const handleDeleteEnterprise = async (code) => {
+  const handleDeleteEnterprise = (code) => {
     const defaultCodes = ["JC", "ACE", "RE", "SS", "SN", "ASQ", "SSN"];
     if (defaultCodes.includes(code)) {
       notifyFn(`"${code}" is a core enterprise and cannot be deleted`, 'warning');
       return;
     }
-    if (!window.confirm(`Are you sure you want to remove enterprise "${code}"?`)) {
-      return;
-    }
-    try {
-      const res = await fetch(`/api/enterprises/${encodeURIComponent(code)}`, { method: 'DELETE' });
-      if (res.ok) {
-        notifyFn(`Enterprise "${code}" removed`, 'success');
-        fetchAvailableEnterprises();
-        fetchGroups();
+    setConfirmAction({
+      title: 'Remove Enterprise',
+      message: `Are you sure you want to remove enterprise "${code}"?`,
+      subtext: 'This enterprise will be removed from registered entities.',
+      confirmLabel: 'Remove Enterprise',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/enterprises/${encodeURIComponent(code)}`, { method: 'DELETE' });
+          if (res.ok) {
+            notifyFn(`Enterprise "${code}" removed`, 'success');
+            fetchAvailableEnterprises();
+            fetchGroups();
+          }
+        } catch (err) {
+          notifyFn('Error deleting enterprise', 'error');
+        }
       }
-    } catch (err) {
-      notifyFn('Error deleting enterprise', 'error');
-    }
+    });
   };
 
   // Quick Modal: Add Bank
@@ -353,24 +368,29 @@ export default function SettingsView({ onNotify }) {
     }
   };
 
-  const handleDeleteBank = async (bName) => {
+  const handleDeleteBank = (bName) => {
     const defaultBanks = ["ICICI", "KOTAK", "AXIS", "IDBI", "IDFC"];
     if (defaultBanks.includes(bName)) {
       notifyFn(`"${bName}" is a core parser bank and cannot be deleted`, 'warning');
       return;
     }
-    if (!window.confirm(`Are you sure you want to remove bank "${bName}"?`)) {
-      return;
-    }
-    try {
-      const res = await fetch(`/api/banks/${encodeURIComponent(bName)}`, { method: 'DELETE' });
-      if (res.ok) {
-        notifyFn(`Bank "${bName}" removed`, 'success');
-        fetchSupportedBanks();
+    setConfirmAction({
+      title: 'Remove Bank',
+      message: `Are you sure you want to remove bank "${bName}"?`,
+      subtext: 'This bank will be removed from supported statement options.',
+      confirmLabel: 'Remove Bank',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/banks/${encodeURIComponent(bName)}`, { method: 'DELETE' });
+          if (res.ok) {
+            notifyFn(`Bank "${bName}" removed`, 'success');
+            fetchSupportedBanks();
+          }
+        } catch (err) {
+          notifyFn('Error deleting bank', 'error');
+        }
       }
-    } catch (err) {
-      notifyFn('Error deleting bank', 'error');
-    }
+    });
   };
 
   // Filtered Groups for Table Search
@@ -1214,6 +1234,66 @@ export default function SettingsView({ onNotify }) {
                 className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer shadow-2xs"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 4. MODAL: Custom Modern Confirmation Dialog (Replaces native browser alert/confirm) */}
+      {confirmAction && createPortal(
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="confirm-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setConfirmAction(null);
+          }}
+        >
+          <div 
+            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-200/60 flex items-center justify-center shrink-0 shadow-2xs">
+                <AlertTriangle className="w-5 h-5 stroke-[2.2]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 id="confirm-modal-title" className="text-base font-bold text-slate-900 tracking-tight">
+                  {confirmAction.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                  {confirmAction.message}
+                </p>
+                {confirmAction.subtext && (
+                  <p className="text-xs text-slate-400 mt-1.5 font-medium">
+                    {confirmAction.subtext}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer shadow-2xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const fn = confirmAction.onConfirm;
+                  setConfirmAction(null);
+                  if (fn) fn();
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-rose-600 text-white hover:bg-rose-700 transition-all shadow-xs cursor-pointer active:scale-[0.98]"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{confirmAction.confirmLabel || 'Delete'}</span>
               </button>
             </div>
           </div>
