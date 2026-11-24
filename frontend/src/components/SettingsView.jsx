@@ -10,7 +10,8 @@ import {
   Trash2,
   Edit2,
   X,
-  AlertCircle
+  AlertCircle,
+  Info
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
@@ -72,6 +73,18 @@ export default function SettingsView({ onNotify }) {
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  // Close modal on Escape key press (Web Interface Guidelines compliance)
+  useEffect(() => {
+    if (!showEnterpriseModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowEnterpriseModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showEnterpriseModal]);
 
   // Open modal to Add Enterprise Mapping
   const openAddEnterpriseModal = () => {
@@ -377,30 +390,51 @@ export default function SettingsView({ onNotify }) {
         )}
       </div>
 
-      {/* MODAL: Add / Edit Enterprise Bank Requirements */}
+      {/* MODAL: Add / Edit Enterprise Bank Requirements (Modern UI) */}
       {showEnterpriseModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-5 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-indigo-600" />
-                <h3 className="text-lg font-bold text-slate-900">
-                  {editingEnterpriseCode ? `Modify Enterprise: ${editingEnterpriseCode}` : 'Add Enterprise Bank Requirements'}
-                </h3>
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="enterprise-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowEnterpriseModal(false);
+          }}
+        >
+          <div 
+            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col space-y-0"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-100">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <Building2 className="w-5 h-5 text-white" aria-hidden="true" />
+              </div>
+              <div className="flex-1 min-w-0 pr-2">
+                <h2 id="enterprise-modal-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                  {editingEnterpriseCode ? `Edit Enterprise: ${editingEnterpriseCode}` : 'Add Enterprise Bank Requirements'}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5 leading-relaxed">
+                  Configure company details and mandatory bank statements.
+                </p>
               </div>
               <button 
+                type="button"
                 onClick={() => setShowEnterpriseModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 cursor-pointer shrink-0"
+                aria-label="Close dialog"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEnterprise} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Enterprise Code
+            {/* Modal Form Body */}
+            <form onSubmit={handleSaveEnterprise} className="space-y-4 px-6 py-5">
+              {/* Enterprise Code & Name Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Enterprise Code <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -409,12 +443,14 @@ export default function SettingsView({ onNotify }) {
                     onChange={(e) => setEntFormCode(e.target.value.toUpperCase())}
                     disabled={!!editingEnterpriseCode}
                     required
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-mono font-bold text-slate-900 focus:outline-none focus:border-indigo-500 disabled:opacity-60"
+                    maxLength={10}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed shadow-2xs"
                   />
+                  <p className="text-[11px] text-slate-400">Short unique identifier</p>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                    Enterprise Full Name
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Full Name <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -422,16 +458,24 @@ export default function SettingsView({ onNotify }) {
                     value={entFormName}
                     onChange={(e) => setEntFormName(e.target.value.toUpperCase())}
                     required
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 uppercase"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
                   />
+                  <p className="text-[11px] text-slate-400">Account holder / company</p>
                 </div>
               </div>
 
-              {/* Select Expected Banks */}
-              <div className="space-y-2 pt-2">
-                <label className="block text-xs font-bold text-slate-700 uppercase">
-                  Select Required Bank Statements:
-                </label>
+              {/* Select Expected Bank Statements */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                    Select Required Bank Statements <span className="text-rose-500">*</span>
+                  </label>
+                  <span className={`text-xs font-medium ${entFormBanks.length > 0 ? 'text-slate-900 font-semibold' : 'text-slate-400'}`}>
+                    {entFormBanks.length} selected
+                  </span>
+                </div>
+
+                {/* Modern Bank Selector Tiles */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {supportedBanks.map((b) => {
                     const isSelected = entFormBanks.includes(b.toUpperCase());
@@ -440,14 +484,22 @@ export default function SettingsView({ onNotify }) {
                         type="button"
                         key={b}
                         onClick={() => toggleBankSelection(b)}
-                        className={`flex items-center justify-between p-2.5 rounded-xl border text-xs font-bold font-mono transition-all cursor-pointer ${
+                        className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer select-none active:scale-[0.98] ${
                           isSelected 
-                            ? 'bg-indigo-50 border-indigo-500 text-indigo-700 shadow-2xs ring-1 ring-indigo-500' 
-                            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                            ? 'bg-slate-900 border-slate-900 text-white shadow-xs' 
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50/80 shadow-2xs'
                         }`}
                       >
                         <span>{b}</span>
-                        {isSelected ? <Check className="w-4 h-4 text-indigo-600 shrink-0" /> : <div className="w-4 h-4 rounded border border-slate-300" />}
+                        {isSelected ? (
+                          <div className="w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center shrink-0 text-slate-400 text-[10px]">
+                            +
+                          </div>
+                        )}
                       </button>
                     );
                   })}
@@ -455,49 +507,87 @@ export default function SettingsView({ onNotify }) {
               </div>
 
               {/* Add Custom Bank Name */}
-              <div className="pt-1">
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase mb-1">
-                  Add Other Bank (if not listed):
+              <div className="space-y-1.5 pt-1">
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Add Other Bank (If Not Listed):
                 </label>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    placeholder="e.g. HDFC or SBI"
+                    placeholder="e.g. HDFC, CANARA, SBI..."
                     value={customBankName}
                     onChange={(e) => setCustomBankName(e.target.value.toUpperCase())}
-                    className="flex-1 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-800 uppercase focus:outline-none focus:border-indigo-400"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomBank();
+                      }
+                    }}
+                    className="flex-1 px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal uppercase focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none shadow-2xs"
                   />
                   <button
                     type="button"
                     onClick={handleAddCustomBank}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 cursor-pointer"
+                    disabled={!customBankName.trim()}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 border border-slate-200 transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                   >
                     + Add Bank
                   </button>
                 </div>
               </div>
 
-              {/* Active Selection Summary */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
-                <span className="font-bold text-slate-800">Required Statements: </span>
-                {entFormBanks.length > 0 ? entFormBanks.join(', ') : <span className="text-rose-500 font-semibold">None selected</span>}
+              {/* Active Selection Live Summary */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-700">Configured Statements:</span>
+                  <span className="text-[11px] text-slate-500 font-mono">
+                    {entFormBanks.length} bank{entFormBanks.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                {entFormBanks.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {entFormBanks.map((b) => (
+                      <span
+                        key={b}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-white text-slate-800 border border-slate-200 shadow-2xs"
+                      >
+                        <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                        {b}
+                        <button
+                          type="button"
+                          onClick={() => toggleBankSelection(b)}
+                          className="text-slate-400 hover:text-rose-600 ml-0.5 cursor-pointer text-xs"
+                          title={`Remove ${b}`}
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-600 flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 shrink-0" />
+                    Please click the bank cards above to configure expected statements.
+                  </p>
+                )}
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              {/* Modal Actions Footer */}
+              <div className="px-6 py-4 -mx-6 -mb-5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-end gap-2.5 rounded-b-2xl">
                 <button
                   type="button"
                   onClick={() => setShowEnterpriseModal(false)}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
+                  disabled={isSubmitting || entFormBanks.length === 0}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <Save className="w-4 h-4" />
-                  {isSubmitting ? 'Saving...' : 'Save Mapping'}
+                  <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+                  <span>{isSubmitting ? 'Saving...' : editingEnterpriseCode ? 'Save Changes' : 'Save Enterprise'}</span>
                 </button>
               </div>
             </form>
