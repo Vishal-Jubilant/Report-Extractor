@@ -78,7 +78,7 @@ export default function SettingsView({ onNotify }) {
     setEditingEnterpriseCode(null);
     setEntFormCode('');
     setEntFormName('');
-    setEntFormBanks(['KOTAK', 'IDFC']);
+    setEntFormBanks([]);
     setCustomBankName('');
     setShowEnterpriseModal(true);
   };
