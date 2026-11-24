@@ -261,14 +261,14 @@ export default function SettingsView({ onNotify }) {
               />
             </div>
 
-            {/* Add Enterprise Button */}
+            {/* Add Group Button */}
             <button
               type="button"
               onClick={openAddGroupModal}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-[0.98] shrink-0"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Enterprise</span>
+              <span>Add Group</span>
             </button>
           </div>
         </div>
@@ -382,7 +382,7 @@ export default function SettingsView({ onNotify }) {
               {filteredGroups.length === 0 && (
                 <tr>
                   <td colSpan={5} className="text-center py-12 text-slate-400 text-sm">
-                    {loading ? 'Loading configurations...' : 'No group configurations match your search. Click "Add Enterprise" to create one.'}
+                    {loading ? 'Loading configurations...' : 'No group configurations match your search. Click "Add Group" to create one.'}
                   </td>
                 </tr>
               )}
