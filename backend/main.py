@@ -503,21 +503,13 @@ def delete_bank(name: str):
 def get_distinct_enterprises():
     _reload_config()
     with get_worker_session() as session:
-        ents = session.query(Enterprise).all()
-        codes = session.query(AccountCode).all()
-        results = {}
-        for c in codes:
-            results[c.account_code] = {
-                "code": c.account_code,
-                "name": c.holder_name
-            }
-        for e in ents:
-            if e.code not in results or not results[e.code].get("name"):
-                results[e.code] = {
-                    "code": e.code,
-                    "name": e.name
-                }
-        return {"enterprises": sorted(list(results.values()), key=lambda x: x["code"])}
+        ents = session.query(Enterprise).order_by(Enterprise.code).all()
+        return {
+            "enterprises": [
+                {"code": e.code, "name": e.name}
+                for e in ents
+            ]
+        }
 
 
 @app.post("/api/enterprises/quick-add", response_model=SimpleMessageResponse)

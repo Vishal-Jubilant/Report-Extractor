@@ -279,7 +279,6 @@ export default function SettingsView({ onNotify }) {
       if (!res.ok) throw new Error(data.detail || 'Failed to add enterprise');
 
       notifyFn(`Enterprise "${code}" added successfully!`, 'success');
-      setShowAddEnterpriseModal(false);
       setNewEntCode('');
       setNewEntName('');
       fetchAvailableEnterprises();
@@ -287,6 +286,27 @@ export default function SettingsView({ onNotify }) {
       notifyFn(err.message || 'Error adding enterprise', 'error');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteEnterprise = async (code) => {
+    const defaultCodes = ["JC", "ACE", "RE", "SS", "SN", "ASQ", "SSN"];
+    if (defaultCodes.includes(code)) {
+      notifyFn(`"${code}" is a core enterprise and cannot be deleted`, 'warning');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to remove enterprise "${code}"?`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/enterprises/${encodeURIComponent(code)}`, { method: 'DELETE' });
+      if (res.ok) {
+        notifyFn(`Enterprise "${code}" removed`, 'success');
+        fetchAvailableEnterprises();
+        fetchGroups();
+      }
+    } catch (err) {
+      notifyFn('Error deleting enterprise', 'error');
     }
   };
 
@@ -841,22 +861,36 @@ export default function SettingsView({ onNotify }) {
                   {availableEnterprises.length === 0 ? (
                     <p className="text-xs text-slate-400 py-2 text-center">No enterprises registered yet.</p>
                   ) : (
-                    availableEnterprises.map((ent) => (
-                      <div 
-                        key={ent.code}
-                        className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-slate-200/80 shadow-2xs text-xs"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="px-2 py-0.5 rounded font-mono font-bold bg-slate-900 text-white text-[11px] tracking-wider shrink-0">
-                            {ent.code}
-                          </span>
-                          <span className="font-semibold text-slate-800 truncate">
-                            {ent.name || ent.code}
-                          </span>
+                    availableEnterprises.map((ent) => {
+                      const isDefault = ["JC", "ACE", "RE", "SS", "SN", "ASQ", "SSN"].includes(ent.code);
+                      return (
+                        <div 
+                          key={ent.code}
+                          className="flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-slate-200/80 shadow-2xs text-xs"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="px-2 py-0.5 rounded font-mono font-bold bg-slate-900 text-white text-[11px] tracking-wider shrink-0">
+                              {ent.code}
+                            </span>
+                            <span className="font-semibold text-slate-800 truncate">
+                              {ent.name || ent.code}
+                            </span>
+                          </div>
+                          {isDefault ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEnterprise(ent.code)}
+                              className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer p-0.5 rounded hover:bg-rose-50 shrink-0"
+                              title={`Delete custom enterprise ${ent.code}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
-                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
