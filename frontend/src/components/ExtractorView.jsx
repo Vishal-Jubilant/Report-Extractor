@@ -11,7 +11,7 @@ import ExtractorDropzone from './extractor/ExtractorDropzone';
 import MissingBanksModal from './extractor/MissingBanksModal';
 import TransactionPanel from './extractor/TransactionPanel';
 
-export default function ExtractorView({ onNotify, onNavigateToSettings }) {
+export default function ExtractorView({ onNotify, onNavigateToSettings, isActive = true }) {
   const { notify } = useToast();
   const notifyFn = onNotify || notify;
 
@@ -48,8 +48,10 @@ export default function ExtractorView({ onNotify, onNavigateToSettings }) {
   }, []);
 
   useEffect(() => {
-    fetchEnterprises();
-  }, [fetchEnterprises]);
+    if (isActive) {
+      fetchEnterprises();
+    }
+  }, [isActive, fetchEnterprises]);
 
   // File Upload Handlers
   const addFiles = useCallback((newFiles) => {
