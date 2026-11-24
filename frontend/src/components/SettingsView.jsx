@@ -754,14 +754,24 @@ export default function SettingsView({ onNotify }) {
                                 <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-150 shrink-0 ml-2 ${openEnterpriseDropdownIdx === idx ? 'rotate-180 text-slate-900' : ''}`} />
                               </button>
 
-                              {/* Custom Dropdown Menu */}
+                              {/* Custom Dropdown Menu (Drops upwards to prevent hiding under footer) */}
                               {openEnterpriseDropdownIdx === idx && (
                                 <>
                                   <div 
                                     className="fixed inset-0 z-30" 
                                     onClick={() => setOpenEnterpriseDropdownIdx(null)} 
                                   />
-                                  <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 max-h-56 overflow-y-auto divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100">
+                                  <div className="absolute left-0 right-0 bottom-full mb-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 max-h-52 overflow-y-auto divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="px-3.5 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500 sticky top-0 z-10">
+                                      <span className="font-semibold text-slate-700">Select Enterprise:</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => setOpenEnterpriseDropdownIdx(null)}
+                                        className="font-bold text-slate-700 hover:text-slate-900 px-2 py-0.5 rounded hover:bg-slate-200/70 cursor-pointer transition-colors"
+                                      >
+                                        Close
+                                      </button>
+                                    </div>
                                   {availableEnterprises.length === 0 ? (
                                     <div className="px-3.5 py-2 text-xs text-slate-400 text-center">
                                       No enterprises found. Add one from the toolbar.
