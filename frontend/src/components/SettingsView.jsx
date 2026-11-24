@@ -757,7 +757,12 @@ export default function SettingsView({ onNotify }) {
 
                               {/* Custom Dropdown Menu */}
                               {openEnterpriseDropdownIdx === idx && (
-                                <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 max-h-56 overflow-y-auto divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100">
+                                <>
+                                  <div 
+                                    className="fixed inset-0 z-30" 
+                                    onClick={() => setOpenEnterpriseDropdownIdx(null)} 
+                                  />
+                                  <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 max-h-56 overflow-y-auto divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100">
                                   {availableEnterprises.length === 0 ? (
                                     <div className="px-3.5 py-2 text-xs text-slate-400 text-center">
                                       No enterprises found. Add one from the toolbar.
@@ -797,44 +802,50 @@ export default function SettingsView({ onNotify }) {
                                     })
                                   )}
                                 </div>
-                              )}
-                            </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 2. Custom Bank Statement Dropdown */}
+                        <div className="space-y-1.5 pt-0.5 relative">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-slate-700 uppercase tracking-wider">
+                              Required Bank Statements <span className="text-rose-500">*</span>
+                            </span>
+                            <span className="text-slate-500 font-mono text-[11px]">
+                              {ent.banks.length} selected
+                            </span>
                           </div>
 
-                          {/* 2. Custom Bank Statement Dropdown */}
-                          <div className="space-y-1.5 pt-0.5 relative">
-                            <div className="flex items-center justify-between text-[11px]">
-                              <span className="font-bold text-slate-700 uppercase tracking-wider">
-                                Required Bank Statements <span className="text-rose-500">*</span>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenBankDropdownIdx(openBankDropdownIdx === idx ? null : idx);
+                                if (openEnterpriseDropdownIdx === idx) setOpenEnterpriseDropdownIdx(null);
+                              }}
+                              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all outline-none shadow-2xs cursor-pointer text-left ${
+                                openBankDropdownIdx === idx 
+                                  ? 'bg-white border-slate-900 ring-2 ring-slate-900/10' 
+                                  : 'bg-white border-slate-200 text-slate-800 hover:border-slate-300'
+                              }`}
+                            >
+                              <span className={ent.banks.length > 0 ? "text-slate-900 font-bold truncate pr-2 font-mono text-xs" : "text-slate-400 font-normal"}>
+                                {ent.banks.length === 0 
+                                  ? "Select required banks from dropdown..." 
+                                  : `${ent.banks.join(', ')} (${ent.banks.length} selected)`}
                               </span>
-                              <span className="text-slate-500 font-mono text-[11px]">
-                                {ent.banks.length} selected
-                              </span>
-                            </div>
+                              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-150 shrink-0 ml-2 ${openBankDropdownIdx === idx ? 'rotate-180 text-slate-900' : ''}`} />
+                            </button>
 
-                            <div className="relative">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOpenBankDropdownIdx(openBankDropdownIdx === idx ? null : idx);
-                                  if (openEnterpriseDropdownIdx === idx) setOpenEnterpriseDropdownIdx(null);
-                                }}
-                                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all outline-none shadow-2xs cursor-pointer text-left ${
-                                  openBankDropdownIdx === idx 
-                                    ? 'bg-white border-slate-900 ring-2 ring-slate-900/10' 
-                                    : 'bg-white border-slate-200 text-slate-800 hover:border-slate-300'
-                                }`}
-                              >
-                                <span className={ent.banks.length > 0 ? "text-slate-900 font-bold truncate pr-2 font-mono text-xs" : "text-slate-400 font-normal"}>
-                                  {ent.banks.length === 0 
-                                    ? "Select required banks from dropdown..." 
-                                    : `${ent.banks.join(', ')} (${ent.banks.length} selected)`}
-                                </span>
-                                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-150 shrink-0 ml-2 ${openBankDropdownIdx === idx ? 'rotate-180 text-slate-900' : ''}`} />
-                              </button>
-
-                              {/* Custom Dropdown Menu for Banks */}
-                              {openBankDropdownIdx === idx && (
+                            {/* Custom Dropdown Menu for Banks */}
+                            {openBankDropdownIdx === idx && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-30" 
+                                  onClick={() => setOpenBankDropdownIdx(null)} 
+                                />
                                 <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 max-h-56 overflow-y-auto divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100">
                                   <div className="px-3.5 py-1.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                                     <span className="font-semibold">Select one or more banks:</span>
@@ -880,7 +891,8 @@ export default function SettingsView({ onNotify }) {
                                     })}
                                   </div>
                                 </div>
-                              )}
+                              </>
+                            )}
                             </div>
                           </div>
                         </div>
