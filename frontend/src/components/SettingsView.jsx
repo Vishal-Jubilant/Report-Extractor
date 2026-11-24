@@ -528,34 +528,24 @@ export default function SettingsView({ onNotify }) {
                   {/* Required Bank Statements per Enterprise */}
                   <td className="px-6 py-4">
                     <div className="space-y-2">
-                      {grp.enterprises.map((ent, eIdx) => {
-                        const entCode = ent.code || ent.name;
-                        const showPrefix = grp.enterprises.length > 1;
-
-                        return (
-                          <div key={eIdx} className="flex items-center gap-2 min-h-[26px]">
-                            {showPrefix && (
-                              <span className="w-12 font-mono font-bold text-xs text-slate-500 shrink-0 text-left select-none">
-                                {entCode}:
-                              </span>
+                      {grp.enterprises.map((ent, eIdx) => (
+                        <div key={eIdx} className="flex items-center min-h-[26px]">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {(ent.banks && ent.banks.length > 0) ? (
+                              ent.banks.map((b) => (
+                                <span
+                                  key={b}
+                                  className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200/90 shadow-2xs"
+                                >
+                                  {b}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-xs text-slate-400 italic">None configured</span>
                             )}
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              {(ent.banks && ent.banks.length > 0) ? (
-                                ent.banks.map((b) => (
-                                  <span
-                                    key={b}
-                                    className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200/90 shadow-2xs"
-                                  >
-                                    {b}
-                                  </span>
-                                ))
-                              ) : (
-                                <span className="text-xs text-slate-400 italic">None configured</span>
-                              )}
-                            </div>
                           </div>
-                        );
-                      })}
+                        </div>
+                      ))}
                     </div>
                   </td>
 
