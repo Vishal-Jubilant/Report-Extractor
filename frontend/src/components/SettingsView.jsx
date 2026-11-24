@@ -515,7 +515,7 @@ export default function SettingsView({ onNotify }) {
                   <td className="px-6 py-4">
                     <div className="space-y-2">
                       {grp.enterprises.map((ent, eIdx) => (
-                        <div key={eIdx} className="flex items-center gap-2">
+                        <div key={eIdx} className="flex items-center gap-2 min-h-[26px]">
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
                           <span className="text-sm font-bold text-slate-900">
                             {ent.name || ent.code}
@@ -528,26 +528,35 @@ export default function SettingsView({ onNotify }) {
                   {/* Required Bank Statements per Enterprise */}
                   <td className="px-6 py-4">
                     <div className="space-y-2">
-                      {grp.enterprises.map((ent, eIdx) => (
-                        <div key={eIdx} className="flex flex-wrap items-center gap-1.5 min-h-[24px]">
-                          <span className="text-[11px] font-mono font-bold text-slate-500 mr-0.5">
-                            {ent.name || ent.code}:
-                          </span>
-                          {(ent.banks && ent.banks.length > 0) ? (
-                            ent.banks.map((b) => (
-                              <span
-                                key={b}
-                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-mono font-semibold bg-slate-100 text-slate-800 border border-slate-200/90 shadow-2xs"
-                              >
-                                <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
-                                {b}
+                      {grp.enterprises.map((ent, eIdx) => {
+                        const entCode = ent.code || ent.name;
+                        const showPrefix = grp.enterprises.length > 1;
+
+                        return (
+                          <div key={eIdx} className="flex items-center gap-2.5 min-h-[26px]">
+                            {showPrefix && (
+                              <span className="inline-flex items-center justify-center w-14 px-1.5 py-0.5 rounded-md font-mono font-bold text-[11px] bg-slate-100 text-slate-700 border border-slate-200/90 shrink-0">
+                                {entCode}
                               </span>
-                            ))
-                          ) : (
-                            <span className="text-xs text-slate-400 italic">None configured</span>
-                          )}
-                        </div>
-                      ))}
+                            )}
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {(ent.banks && ent.banks.length > 0) ? (
+                                ent.banks.map((b) => (
+                                  <span
+                                    key={b}
+                                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-mono font-semibold bg-slate-100 text-slate-800 border border-slate-200/90 shadow-2xs"
+                                  >
+                                    <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                                    {b}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-xs text-slate-400 italic">None configured</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </td>
 
