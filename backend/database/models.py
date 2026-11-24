@@ -79,3 +79,16 @@ class EnterpriseBank(Base):
 
     def __repr__(self) -> str:
         return f"<EnterpriseBank(id={self.id}, enterprise_id={self.enterprise_id}, bank='{self.bank_name}')>"
+
+
+class Bank(Base):
+    __tablename__ = "banks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<Bank(id={self.id}, name='{self.name}')>"

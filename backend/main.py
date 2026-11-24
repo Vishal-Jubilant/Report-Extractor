@@ -15,6 +15,8 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from config import account_codes, accounts, bank_layouts, enterprise_banks, name_mappings, regex_patterns
+from backend.database import get_worker_session
+from backend.database.models import Bank, Enterprise, AccountCode
 from core.extractor import (
     account_sort_key,
     detect_bank,
@@ -106,6 +108,15 @@ class GroupResponseItem(BaseModel):
 class GroupListResponse(BaseModel):
     groups: List[GroupResponseItem]
     supported_banks: List[str]
+
+
+class BankRequest(BaseModel):
+    name: str
+
+
+class QuickEnterpriseRequest(BaseModel):
+    code: str
+    name: Optional[str] = None
 
 
 class EnterpriseActionResponse(BaseModel):
@@ -449,10 +460,71 @@ def health_check():
 @app.get("/api/banks", response_model=BanksResponse)
 def get_supported_banks():
     _reload_config()
+    try:
+        with get_worker_session() as session:
+            db_banks = [b.name for b in session.query(Bank).order_by(Bank.name).all()]
+    except Exception:
+        db_banks = []
+    all_banks = sorted(list(set(list(bank_layouts.BANK_LAYOUTS.keys()) + db_banks)))
     return {
-        "banks": list(bank_layouts.BANK_LAYOUTS.keys()),
+        "banks": all_banks,
         "account_order": accounts.ACCOUNT_ORDER,
     }
+
+
+@app.post("/api/banks", response_model=SimpleMessageResponse)
+def add_bank(data: BankRequest):
+    _reload_config()
+    b_name = data.name.strip().upper()
+    if not b_name:
+        raise HTTPException(status_code=400, detail="Bank name is required")
+    with get_worker_session() as session:
+        existing = session.query(Bank).filter_by(name=b_name).first()
+        if not existing:
+            session.add(Bank(name=b_name))
+            session.commit()
+    return {"message": f"Bank '{b_name}' added successfully"}
+
+
+@app.get("/api/enterprises/list")
+def get_distinct_enterprises():
+    _reload_config()
+    with get_worker_session() as session:
+        ents = session.query(Enterprise).all()
+        codes = session.query(AccountCode).all()
+        results = {}
+        for c in codes:
+            results[c.account_code] = {
+                "code": c.account_code,
+                "name": c.holder_name
+            }
+        for e in ents:
+            if e.code not in results or not results[e.code].get("name"):
+                results[e.code] = {
+                    "code": e.code,
+                    "name": e.name
+                }
+        return {"enterprises": sorted(list(results.values()), key=lambda x: x["code"])}
+
+
+@app.post("/api/enterprises/quick-add", response_model=SimpleMessageResponse)
+def quick_add_enterprise(data: QuickEnterpriseRequest):
+    _reload_config()
+    code = data.code.strip().upper()
+    name = (data.name or code).strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="Enterprise code is required")
+    with get_worker_session() as session:
+        ac = session.query(AccountCode).filter_by(holder_name=name).first()
+        if not ac:
+            session.add(AccountCode(holder_name=name, account_code=code))
+        ent = session.query(Enterprise).filter_by(code=code).first()
+        if not ent:
+            session.add(Enterprise(code=code, name=name, group_name=code))
+        session.commit()
+    account_codes.HOLDER_TO_CODE = account_codes.load_account_codes()
+    _reload_config()
+    return {"message": f"Enterprise '{code}' added successfully"}
 
 
 @app.get("/api/settings", response_model=SettingsResponse)

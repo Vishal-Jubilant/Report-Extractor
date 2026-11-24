@@ -4,6 +4,7 @@ import {
   Search, 
   Check, 
   Building2, 
+  Landmark,
   Trash2, 
   Edit2, 
   X, 
@@ -18,19 +19,30 @@ export default function SettingsView({ onNotify }) {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Groups & Enterprise State
+  // Groups & Enterprise & Banks State
   const [groups, setGroups] = useState([]);
   const [supportedBanks, setSupportedBanks] = useState(["ICICI", "KOTAK", "AXIS", "IDBI", "IDFC"]);
+  const [availableEnterprises, setAvailableEnterprises] = useState([]);
   const [enterpriseSearch, setEnterpriseSearch] = useState('');
 
-  // Group Form Modal State
-  const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
+  // 1. Group Form Modal State
+  const [showGroupModal, setShowGroupModal] = useState(false);
   const [editingGroupName, setEditingGroupName] = useState(null); // null if adding, string if editing
   const [formGroupName, setFormGroupName] = useState('');
   const [formEnterprises, setFormEnterprises] = useState([
-    { id: 1, name: '', banks: [] }
+    { id: 1, name: '', isCustom: false, banks: [] }
   ]);
 
+  // 2. Add Enterprise Quick Modal State
+  const [showAddEnterpriseModal, setShowAddEnterpriseModal] = useState(false);
+  const [newEntCode, setNewEntCode] = useState('');
+  const [newEntName, setNewEntName] = useState('');
+
+  // 3. Add Bank Quick Modal State
+  const [showAddBankModal, setShowAddBankModal] = useState(false);
+  const [newBankName, setNewBankName] = useState('');
+
+  // Fetch all groups
   const fetchGroups = async () => {
     try {
       setLoading(true);
@@ -50,30 +62,61 @@ export default function SettingsView({ onNotify }) {
     }
   };
 
+  // Fetch all registered distinct enterprises for dropdowns
+  const fetchAvailableEnterprises = async () => {
+    try {
+      const res = await fetch('/api/enterprises/list');
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableEnterprises(data.enterprises || []);
+      }
+    } catch (err) {
+      console.error('Failed to load enterprises list:', err);
+    }
+  };
+
+  // Fetch all supported banks
+  const fetchSupportedBanks = async () => {
+    try {
+      const res = await fetch('/api/banks');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.banks && data.banks.length > 0) {
+          setSupportedBanks(data.banks);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load supported banks:', err);
+    }
+  };
+
   useEffect(() => {
     fetchGroups();
+    fetchAvailableEnterprises();
+    fetchSupportedBanks();
   }, []);
 
-  // Close modal on Escape key press (Web Interface Guidelines compliance)
+  // Escape key closes whichever modal is open
   useEffect(() => {
-    if (!showEnterpriseModal) return;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        setShowEnterpriseModal(false);
+        if (showAddBankModal) setShowAddBankModal(false);
+        else if (showAddEnterpriseModal) setShowAddEnterpriseModal(false);
+        else if (showGroupModal) setShowGroupModal(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showEnterpriseModal]);
+  }, [showGroupModal, showAddEnterpriseModal, showAddBankModal]);
 
   // Open modal to Add Group & Enterprises
   const openAddGroupModal = () => {
     setEditingGroupName(null);
     setFormGroupName('');
     setFormEnterprises([
-      { id: Date.now(), name: '', banks: [] }
+      { id: Date.now(), name: '', isCustom: false, banks: [] }
     ]);
-    setShowEnterpriseModal(true);
+    setShowGroupModal(true);
   };
 
   // Open modal to Edit Group
@@ -84,33 +127,49 @@ export default function SettingsView({ onNotify }) {
       (grp.enterprises && grp.enterprises.length > 0)
         ? grp.enterprises.map((e, idx) => ({
             id: Date.now() + idx,
-            name: e.name || e.code,
+            name: e.code || e.name,
+            isCustom: false,
             banks: e.banks || []
           }))
-        : [{ id: Date.now(), name: '', banks: [] }]
+        : [{ id: Date.now(), name: '', isCustom: false, banks: [] }]
     );
-    setShowEnterpriseModal(true);
+    setShowGroupModal(true);
   };
 
-  // Form Handlers
+  // Group Form: Add another enterprise row
   const handleAddEnterpriseRow = () => {
     setFormEnterprises([
       ...formEnterprises,
-      { id: Date.now(), name: '', banks: [] }
+      { id: Date.now(), name: '', isCustom: false, banks: [] }
     ]);
   };
 
+  // Group Form: Remove an enterprise row
   const handleRemoveEnterpriseRow = (idx) => {
     if (formEnterprises.length <= 1) return;
     setFormEnterprises(formEnterprises.filter((_, i) => i !== idx));
   };
 
-  const handleEnterpriseNameChange = (idx, val) => {
+  // Group Form: Change enterprise from dropdown or custom
+  const handleEnterpriseDropdownChange = (idx, selectedVal) => {
+    const updated = [...formEnterprises];
+    if (selectedVal === '__NEW__') {
+      updated[idx].isCustom = true;
+      updated[idx].name = '';
+    } else {
+      updated[idx].isCustom = false;
+      updated[idx].name = selectedVal;
+    }
+    setFormEnterprises(updated);
+  };
+
+  const handleEnterpriseCustomNameChange = (idx, val) => {
     const updated = [...formEnterprises];
     updated[idx].name = val.toUpperCase();
     setFormEnterprises(updated);
   };
 
+  // Group Form: Toggle bank selection for a specific enterprise
   const toggleEnterpriseBank = (idx, bank) => {
     const b = bank.toUpperCase();
     const updated = [...formEnterprises];
@@ -123,6 +182,7 @@ export default function SettingsView({ onNotify }) {
     setFormEnterprises(updated);
   };
 
+  // Group Form: Submit Save
   const handleSaveGroup = async (e) => {
     e.preventDefault();
     const grp = formGroupName.trim().toUpperCase();
@@ -170,8 +230,9 @@ export default function SettingsView({ onNotify }) {
       if (!res.ok) throw new Error(data.detail || 'Failed to save group');
 
       notifyFn(`Group "${grp}" and enterprises saved successfully!`, 'success');
-      setShowEnterpriseModal(false);
+      setShowGroupModal(false);
       fetchGroups();
+      fetchAvailableEnterprises();
     } catch (err) {
       notifyFn(err.message || 'Error saving group', 'error');
     } finally {
@@ -179,6 +240,7 @@ export default function SettingsView({ onNotify }) {
     }
   };
 
+  // Group Form: Delete Group
   const handleDeleteGroup = async (grpName) => {
     if (!window.confirm(`Are you sure you want to delete group "${grpName}" and all its enterprises?`)) {
       return;
@@ -190,8 +252,71 @@ export default function SettingsView({ onNotify }) {
 
       notifyFn(`Deleted group "${grpName}" successfully`, 'success');
       fetchGroups();
+      fetchAvailableEnterprises();
     } catch (err) {
       notifyFn(err.message || 'Error deleting group', 'error');
+    }
+  };
+
+  // Quick Modal: Add Enterprise
+  const handleQuickAddEnterprise = async (e) => {
+    e.preventDefault();
+    const code = newEntCode.trim().toUpperCase();
+    const name = (newEntName.trim() || code).toUpperCase();
+    if (!code) {
+      notifyFn('Enterprise Code is required', 'warning');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const res = await fetch('/api/enterprises/quick-add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, name })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to add enterprise');
+
+      notifyFn(`Enterprise "${code}" added successfully!`, 'success');
+      setShowAddEnterpriseModal(false);
+      setNewEntCode('');
+      setNewEntName('');
+      fetchAvailableEnterprises();
+    } catch (err) {
+      notifyFn(err.message || 'Error adding enterprise', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Quick Modal: Add Bank
+  const handleQuickAddBank = async (e) => {
+    e.preventDefault();
+    const bName = newBankName.trim().toUpperCase();
+    if (!bName) {
+      notifyFn('Bank Name is required', 'warning');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const res = await fetch('/api/banks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: bName })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to add bank');
+
+      notifyFn(`Bank "${bName}" added successfully!`, 'success');
+      setShowAddBankModal(false);
+      setNewBankName('');
+      fetchSupportedBanks();
+    } catch (err) {
+      notifyFn(err.message || 'Error adding bank', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -248,9 +373,9 @@ export default function SettingsView({ onNotify }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
             {/* Search Input */}
-            <div className="relative w-full sm:w-64">
+            <div className="relative w-full sm:w-56">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
@@ -261,14 +386,37 @@ export default function SettingsView({ onNotify }) {
               />
             </div>
 
-            {/* Add Group Button */}
+            {/* + Add Group Button */}
             <button
               type="button"
               onClick={openAddGroupModal}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-[0.98] shrink-0"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-[0.98] shrink-0"
+              title="Add a new group with multiple enterprises and banks"
             >
               <Plus className="w-4 h-4" />
               <span>Add Group</span>
+            </button>
+
+            {/* + Add Enterprise Button */}
+            <button
+              type="button"
+              onClick={() => setShowAddEnterpriseModal(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-[0.98] shrink-0"
+              title="Add a new enterprise entity to the system"
+            >
+              <Plus className="w-4 h-4 text-slate-500" />
+              <span>Add Enterprise</span>
+            </button>
+
+            {/* + Add Bank Button */}
+            <button
+              type="button"
+              onClick={() => setShowAddBankModal(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-[0.98] shrink-0"
+              title="Add a new bank statement requirement option"
+            >
+              <Plus className="w-4 h-4 text-slate-500" />
+              <span>Add Bank</span>
             </button>
           </div>
         </div>
@@ -397,15 +545,15 @@ export default function SettingsView({ onNotify }) {
         </div>
       </div>
 
-      {/* MODAL: Add / Edit Group & Enterprise Bank Requirements */}
-      {showEnterpriseModal && (
+      {/* 1. MODAL: Add / Edit Group & Enterprise Bank Requirements */}
+      {showGroupModal && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
           role="dialog"
           aria-modal="true"
           aria-labelledby="group-modal-title"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShowEnterpriseModal(false);
+            if (e.target === e.currentTarget) setShowGroupModal(false);
           }}
         >
           <div 
@@ -422,12 +570,12 @@ export default function SettingsView({ onNotify }) {
                   {editingGroupName ? `Edit Group: ${editingGroupName}` : 'Add Group & Enterprise Requirements'}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5 leading-relaxed">
-                  Configure group name, add multiple enterprises, and select bank statements.
+                  Configure group name, select/add enterprises via dropdown, and choose bank statements.
                 </p>
               </div>
               <button 
                 type="button"
-                onClick={() => setShowEnterpriseModal(false)}
+                onClick={() => setShowGroupModal(false)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 cursor-pointer shrink-0"
                 aria-label="Close dialog"
               >
@@ -460,7 +608,7 @@ export default function SettingsView({ onNotify }) {
                     <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
                       Enterprises Under this Group ({formEnterprises.length}) <span className="text-rose-500">*</span>
                     </label>
-                    <p className="text-[11px] text-slate-400">Add 1, 2, 3 or more enterprises and assign their required banks</p>
+                    <p className="text-[11px] text-slate-400">Select enterprise from dropdown or type new, then choose banks</p>
                   </div>
                   <button
                     type="button"
@@ -496,26 +644,69 @@ export default function SettingsView({ onNotify }) {
                         )}
                       </div>
 
-                      {/* Enterprise Name Input */}
-                      <div className="space-y-1">
-                        <label className="block text-[11px] font-semibold text-slate-700 uppercase">
+                      {/* Enterprise Dropdown Selector (2nd Image specification) */}
+                      <div className="space-y-1.5">
+                        <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider">
                           Enterprise Name / Code <span className="text-rose-500">*</span>
                         </label>
-                        <input
-                          type="text"
-                          placeholder="e.g. SS, SN, or JC ENTERPRISE"
-                          value={ent.name}
-                          onChange={(e) => handleEnterpriseNameChange(idx, e.target.value)}
-                          required
-                          className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
-                        />
+                        
+                        {!ent.isCustom ? (
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={ent.name}
+                              onChange={(e) => handleEnterpriseDropdownChange(idx, e.target.value)}
+                              required
+                              className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none shadow-2xs cursor-pointer"
+                            >
+                              <option value="">Select Enterprise...</option>
+                              {availableEnterprises.map((avail) => (
+                                <option key={avail.code} value={avail.code}>
+                                  {avail.code} &mdash; {avail.name}
+                                </option>
+                              ))}
+                              <option value="__NEW__">&#43; Type New / Custom Enterprise...</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => handleEnterpriseDropdownChange(idx, '__NEW__')}
+                              className="px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 shrink-0 cursor-pointer"
+                              title="Type custom name"
+                            >
+                              Custom
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              placeholder="e.g. SS, SN, or JC ENTERPRISE"
+                              value={ent.name}
+                              onChange={(e) => handleEnterpriseCustomNameChange(idx, e.target.value)}
+                              required
+                              autoFocus
+                              className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...formEnterprises];
+                                updated[idx].isCustom = false;
+                                setFormEnterprises(updated);
+                              }}
+                              className="px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 shrink-0 cursor-pointer"
+                              title="Choose from list"
+                            >
+                              List
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Bank Statement Selector for this Enterprise */}
                       <div className="space-y-1.5 pt-1">
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="font-semibold text-slate-600 uppercase">
-                            Required Bank Statements for {ent.name || `Enterprise #${idx + 1}`}:
+                            Required Bank Statements for Enterprise #{idx + 1}:
                           </span>
                           <span className="text-slate-500 font-mono">
                             {ent.banks.length} selected
@@ -561,7 +752,7 @@ export default function SettingsView({ onNotify }) {
               <div className="px-6 py-4 bg-slate-50/90 border-t border-slate-100 flex items-center justify-end gap-2.5 shrink-0 rounded-b-2xl">
                 <button
                   type="button"
-                  onClick={() => setShowEnterpriseModal(false)}
+                  onClick={() => setShowGroupModal(false)}
                   className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Cancel
@@ -573,6 +764,170 @@ export default function SettingsView({ onNotify }) {
                 >
                   <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
                   <span>{isSubmitting ? 'Saving...' : editingGroupName ? 'Save Changes' : 'Save Group & Enterprises'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2. MODAL: Add New Enterprise */}
+      {showAddEnterpriseModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-enterprise-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddEnterpriseModal(false);
+          }}
+        >
+          <div 
+            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-100">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <Building2 className="w-5 h-5 text-white" aria-hidden="true" />
+              </div>
+              <div className="flex-1 min-w-0 pr-2">
+                <h2 id="add-enterprise-modal-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                  Add New Enterprise
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  Register a new enterprise code and name.
+                </p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowAddEnterpriseModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickAddEnterprise} className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Enterprise Code <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. SS, SN, or JC"
+                  value={newEntCode}
+                  onChange={(e) => setNewEntCode(e.target.value.toUpperCase())}
+                  required
+                  maxLength={15}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
+                />
+                <p className="text-[11px] text-slate-400">Short account code used in statements</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Enterprise Full Name / Holder Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. SUDHAKAR S or JC ENTERPRISE"
+                  value={newEntName}
+                  onChange={(e) => setNewEntName(e.target.value.toUpperCase())}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
+                />
+                <p className="text-[11px] text-slate-400">Full registered company or account holder name</p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowAddEnterpriseModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !newEntCode.trim()}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40"
+                >
+                  <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+                  <span>{isSubmitting ? 'Saving...' : 'Save Enterprise'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. MODAL: Add New Bank */}
+      {showAddBankModal && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-150"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-bank-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddBankModal(false);
+          }}
+        >
+          <div 
+            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-100">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                <Landmark className="w-5 h-5 text-white" aria-hidden="true" />
+              </div>
+              <div className="flex-1 min-w-0 pr-2">
+                <h2 id="add-bank-modal-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                  Add New Bank
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  Register a new bank statement requirement option.
+                </p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowAddBankModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleQuickAddBank} className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Bank Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. HDFC, CANARA, SBI, PNB..."
+                  value={newBankName}
+                  onChange={(e) => setNewBankName(e.target.value.toUpperCase())}
+                  required
+                  maxLength={20}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
+                />
+                <p className="text-[11px] text-slate-400">Bank identifier for statement requirements</p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowAddBankModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !newBankName.trim()}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40"
+                >
+                  <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+                  <span>{isSubmitting ? 'Saving...' : 'Save Bank'}</span>
                 </button>
               </div>
             </form>
