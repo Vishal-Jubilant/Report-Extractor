@@ -253,7 +253,7 @@ export default function SettingsView({ onNotify }) {
 
   // Group Form: Delete Group
   const handleDeleteGroup = async (grpName) => {
-    if (!window.confirm(`Are you sure you want to delete group "${grpName}" and all its enterprises?`)) {
+    if (!window.confirm(`Are you sure you want to delete group "${grpName}"? (Associated enterprises will remain preserved in the system)`)) {
       return;
     }
     try {

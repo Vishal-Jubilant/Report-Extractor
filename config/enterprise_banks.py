@@ -34,7 +34,9 @@ def load_groups() -> list:
             ents = session.query(Enterprise).order_by(Enterprise.id).all()
             groups_dict = {}
             for e in ents:
-                grp = (e.group_name or e.code).strip().upper()
+                if not e.group_name or not e.group_name.strip():
+                    continue
+                grp = e.group_name.strip().upper()
                 if grp not in groups_dict:
                     groups_dict[grp] = {
                         "group_name": grp,
@@ -59,7 +61,7 @@ def save_group(group_name: str, enterprises_list: List[dict], old_group_name: Op
     with get_worker_session() as session:
         # Find existing enterprises belonging to old_grp
         existing_ents = session.query(Enterprise).filter(
-            (Enterprise.group_name == old_grp) | (Enterprise.code == old_grp)
+            Enterprise.group_name == old_grp
         ).all()
 
         incoming_codes = set()
@@ -69,10 +71,10 @@ def save_group(group_name: str, enterprises_list: List[dict], old_group_name: Op
             if raw_code:
                 incoming_codes.add(raw_code)
 
-        # Delete any enterprise under old_grp that was removed in the form
+        # Unassign group_name for any enterprise removed from this group (preserve enterprise entity)
         for e in existing_ents:
             if e.code not in incoming_codes:
-                session.delete(e)
+                e.group_name = None
 
         session.flush()
 
@@ -120,16 +122,17 @@ def save_group(group_name: str, enterprises_list: List[dict], old_group_name: Op
 
 
 def delete_group(group_name: str) -> bool:
-    """Delete a group and all its enterprises."""
+    """Delete a group without deleting the underlying enterprises."""
     grp = group_name.strip().upper()
     with get_worker_session() as session:
         ents = session.query(Enterprise).filter(
-            (Enterprise.group_name == grp) | (Enterprise.code == grp)
+            Enterprise.group_name == grp
         ).all()
         if not ents:
             return False
+        # Remove group association from all enterprises in this group (preserves enterprise entities)
         for e in ents:
-            session.delete(e)
+            e.group_name = None
         session.commit()
         return True
 

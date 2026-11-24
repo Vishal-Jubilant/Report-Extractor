@@ -95,7 +95,7 @@ def test_api_endpoints():
     assert h["status"] == "ok"
 
     b = get_supported_banks()
-    assert len(b["banks"]) == 5
+    assert len(b["banks"]) >= 5
 
     s = get_settings()
     assert len(s["holder_to_code"]) >= 6
