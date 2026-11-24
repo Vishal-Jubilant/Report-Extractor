@@ -1,8 +1,11 @@
 import json
 import os
+import threading
 
 CONFIG_DIR = os.path.dirname(os.path.abspath(__file__))
 JSON_FILE = os.path.join(CONFIG_DIR, "enterprise_banks.json")
+
+_lock = threading.Lock()
 
 DEFAULT_ENTERPRISE_BANKS = {
     "JC": {
@@ -52,8 +55,11 @@ def load_enterprise_banks() -> dict:
 
 
 def save_enterprise_banks(data: dict) -> None:
-    with open(JSON_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    with _lock:
+        temp_file = JSON_FILE + ".tmp"
+        with open(temp_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        os.replace(temp_file, JSON_FILE)
 
 
 def get_enterprise_banks(code_or_name: str) -> list:

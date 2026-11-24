@@ -1,12 +1,13 @@
+import asyncio
 import io
 import os
 import sys
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # Ensure project root is in sys.path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,16 +24,27 @@ from core.extractor import (
 )
 from core.formatting import indian_format, to_float
 
-app = FastAPI(title="RTGS Bank Statement Extractor API", version="2.0.0")
+app = FastAPI(title="RTGS Bank Statement Extractor API", version="2.1.0")
 
+# Security: Specific local origins + regex for local development ports, avoiding wildcard credentials bug
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
+# -----------------------------------------------------------------------------
+# Request & Response Schemas (RORO Pattern & Type Safety)
+# -----------------------------------------------------------------------------
 
 class AccountCodeRequest(BaseModel):
     holder_name: str
@@ -50,113 +62,112 @@ class EnterpriseUpdateModel(BaseModel):
     banks: List[str]
 
 
-@app.get("/api/health")
-def health_check():
-    return {"status": "ok", "app": "RTGS Extractor", "version": "2.0.0"}
+class HealthResponse(BaseModel):
+    status: str
+    app: str
+    version: str
 
 
-@app.get("/api/banks")
-def get_supported_banks():
-    _reload_config()
-    return {
-        "banks": list(bank_layouts.BANK_LAYOUTS.keys()),
-        "account_order": accounts.ACCOUNT_ORDER,
-    }
+class BanksResponse(BaseModel):
+    banks: List[str]
+    account_order: List[str]
 
 
-@app.get("/api/settings")
-def get_settings():
-    _reload_config()
-    return {
-        "holder_to_code": account_codes.HOLDER_TO_CODE,
-        "account_order": accounts.ACCOUNT_ORDER,
-        "supported_banks": list(bank_layouts.BANK_LAYOUTS.keys()),
-        "name_mappings_count": len(name_mappings.NAME_MAPPINGS),
-        "regex_patterns_count": sum(len(v) for v in regex_patterns.BANK_PATTERNS.values()),
-        "enterprise_banks": enterprise_banks.load_enterprise_banks(),
-    }
+class SettingsResponse(BaseModel):
+    holder_to_code: Dict[str, str]
+    account_order: List[str]
+    supported_banks: List[str]
+    name_mappings_count: int
+    regex_patterns_count: int
+    enterprise_banks: Dict[str, Any]
 
 
-@app.get("/api/enterprises")
-def get_enterprises():
-    _reload_config()
-    eb_data = enterprise_banks.load_enterprise_banks()
-    return {
-        "enterprises": list(eb_data.values()),
-        "supported_banks": list(bank_layouts.BANK_LAYOUTS.keys()),
-    }
+class EnterpriseListResponse(BaseModel):
+    enterprises: List[Dict[str, Any]]
+    supported_banks: List[str]
 
 
-@app.post("/api/enterprises")
-def create_or_update_enterprise(data: EnterpriseModel):
-    _reload_config()
-    code = data.code.strip().upper()
-    name = data.name.strip().upper() or code
-    banks = [b.strip().upper() for b in data.banks if b.strip()]
-    if not code:
-        raise HTTPException(status_code=400, detail="Enterprise code is required")
-    if not banks:
-        raise HTTPException(status_code=400, detail="At least one bank must be selected")
-
-    eb_data = enterprise_banks.load_enterprise_banks()
-    eb_data[code] = {
-        "code": code,
-        "name": name,
-        "banks": banks,
-    }
-    enterprise_banks.save_enterprise_banks(eb_data)
-    _reload_config()
-    return {"message": f"Enterprise '{code}' saved successfully", "enterprise": eb_data[code]}
+class EnterpriseActionResponse(BaseModel):
+    message: str
+    enterprise: Optional[Dict[str, Any]] = None
 
 
-@app.put("/api/enterprises/{code}")
-def update_enterprise(code: str, data: EnterpriseUpdateModel):
-    _reload_config()
-    code_key = code.strip().upper()
-    eb_data = enterprise_banks.load_enterprise_banks()
-    if code_key not in eb_data:
-        raise HTTPException(status_code=404, detail=f"Enterprise '{code_key}' not found")
-
-    name = (data.name or "").strip().upper() or eb_data[code_key].get("name", code_key)
-    banks = [b.strip().upper() for b in data.banks if b.strip()]
-    if not banks:
-        raise HTTPException(status_code=400, detail="At least one bank must be selected")
-
-    eb_data[code_key] = {
-        "code": code_key,
-        "name": name,
-        "banks": banks,
-    }
-    enterprise_banks.save_enterprise_banks(eb_data)
-    _reload_config()
-    return {"message": f"Enterprise '{code_key}' updated successfully", "enterprise": eb_data[code_key]}
+class SimpleMessageResponse(BaseModel):
+    message: str
+    status: Optional[str] = None
 
 
-@app.delete("/api/enterprises/{code}")
-def delete_enterprise(code: str):
-    _reload_config()
-    code_key = code.strip().upper()
-    eb_data = enterprise_banks.load_enterprise_banks()
-    if code_key in eb_data:
-        del eb_data[code_key]
-        enterprise_banks.save_enterprise_banks(eb_data)
-        _reload_config()
-        return {"message": f"Enterprise '{code_key}' deleted successfully"}
-    raise HTTPException(status_code=404, detail=f"Enterprise '{code_key}' not found")
+class PrecheckFileItem(BaseModel):
+    filename: str
+    bank: Optional[str] = None
+    account_code: Optional[str] = None
+    holder_name: Optional[str] = None
 
 
-@app.post("/api/precheck")
-async def precheck_statements(
-    files: List[UploadFile] = File(...),
-    selected_enterprise: Optional[str] = Form(None)
-):
-    """
-    Quick pre-scan of uploaded statements to detect bank layouts and account holders,
-    and verify whether all expected bank statements for the enterprise are uploaded.
-    """
-    if not files:
-        raise HTTPException(status_code=400, detail="No files uploaded")
+class PrecheckEnterpriseItem(BaseModel):
+    code: str
+    name: str
+    expected_banks: List[str]
+    uploaded_banks: List[str]
+    missing_banks: List[str]
 
+
+class PrecheckResponse(BaseModel):
+    has_missing: bool
+    enterprises: List[PrecheckEnterpriseItem]
+    files: List[PrecheckFileItem]
+
+
+class TransactionItem(BaseModel):
+    index: int
+    account: str
+    bank: str
+    name: str
+    raw_name: str
+    amount: str
+    amount_num: float
+    short: str
+    type: str
+    status: str
+    file: str
+    line_text: str
+
+
+class TransactionGroup(BaseModel):
+    transactions: List[TransactionItem]
+    count: int
+    total_formatted: str
+    total_num: float
+    text: str
+
+
+class FileSummaryItem(BaseModel):
+    filename: str
+    bank: str
+    account_code: str
+    holder_name: str
+    warning: Optional[str] = None
+    status: str
+    transactions_count: int
+    total_rows_found: Optional[int] = None
+
+
+class ExtractResponse(BaseModel):
+    send: TransactionGroup
+    received: TransactionGroup
+    combined_text: str
+    files: List[FileSummaryItem]
+
+
+# -----------------------------------------------------------------------------
+# Synchronous Core Worker Routines (Offloaded to worker threadpool)
+# -----------------------------------------------------------------------------
+
+def _sync_precheck(
+    payloads: List[Tuple[str, bytes]],
+    selected_enterprise: Optional[str] = None
+) -> dict:
+    """CPU-bound statement pre-check executed in worker thread to prevent event loop blocking."""
     _reload_config()
     eb_data = enterprise_banks.load_enterprise_banks()
 
@@ -164,10 +175,9 @@ async def precheck_statements(
     detected_codes = set()
     detected_banks_overall = set()
 
-    for f in files:
-        file_bytes = await f.read()
+    for fname, file_bytes in payloads:
         stream = io.BytesIO(file_bytes)
-        stream.name = f.filename
+        stream.name = fname
 
         try:
             bank = detect_bank(stream)
@@ -179,14 +189,14 @@ async def precheck_statements(
         if bank:
             detected_banks_overall.add(bank.upper())
             try:
-                code, holder, _ = identify_account(stream, bank, f.filename)
+                code, holder, _ = identify_account(stream, bank, fname)
                 if code and code != "?":
                     detected_codes.add(code.upper())
             except Exception:
                 pass
 
         uploaded_files_info.append({
-            "filename": f.filename,
+            "filename": fname,
             "bank": bank,
             "account_code": code,
             "holder_name": holder,
@@ -259,95 +269,47 @@ async def precheck_statements(
     }
 
 
-@app.post("/api/settings/account-code")
-def add_account_code(data: AccountCodeRequest):
-    _reload_config()
-    holder = data.holder_name.strip().upper()
-    code = data.account_code.strip().upper()
-    if not holder or not code:
-        raise HTTPException(status_code=400, detail="Holder name and Account code are required")
-
-    config_path = os.path.join(BASE_DIR, "config", "account_codes.py")
-    try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            content = f.read()
-
-        # Check if already present
-        if f'"{holder}"' in content.upper():
-            return {"message": f"Account '{holder}' already exists in configuration", "status": "existing"}
-
-        # Append before the closing bracket of HOLDER_TO_CODE
-        entry_str = f'    "{holder}": "{code}",\n'
-        target = "    # Add new accounts here:"
-        if target in content:
-            updated = content.replace(target, f'{entry_str}{target}')
-        else:
-            # find HOLDER_TO_CODE closing bracket
-            idx = content.rfind("}")
-            if idx != -1:
-                updated = content[:idx] + entry_str + content[idx:]
-            else:
-                updated = content + f'\nHOLDER_TO_CODE["{holder}"] = "{code}"\n'
-
-        with open(config_path, "w", encoding="utf-8") as f:
-            f.write(updated)
-
-        _reload_config()
-        return {"message": f"Added '{holder}' -> '{code}' successfully", "status": "success"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update account_codes.py: {str(e)}")
-
-
-@app.post("/api/extract")
-async def extract_statements(
-    files: List[UploadFile] = File(...),
-    manual_banks: Optional[str] = Form(None)
-):
-    """
-    Extract transactions from uploaded PDF, CSV, or Excel bank statements.
-    """
-    if not files:
-        raise HTTPException(status_code=400, detail="No files uploaded")
-
+def _sync_extract(payloads: List[Tuple[str, bytes]]) -> dict:
+    """CPU-bound PDF and tabular extraction executed in worker thread to prevent event loop blocking."""
     _reload_config()
 
     frames = []
     file_summaries = []
 
-    for f in files:
-        file_bytes = await f.read()
+    for fname, file_bytes in payloads:
         stream = io.BytesIO(file_bytes)
-        stream.name = f.filename
+        stream.name = fname
 
         try:
             bank = detect_bank(stream)
         except Exception as e:
             file_summaries.append({
-                "filename": f.filename,
+                "filename": fname,
                 "bank": "UNKNOWN",
                 "account_code": "?",
                 "holder_name": "",
                 "warning": f"Unreadable file: {str(e)}",
                 "status": "error",
                 "transactions_count": 0,
+                "total_rows_found": 0,
             })
             continue
 
         stream.seek(0)
         if bank is None:
-            # Bank auto detection failed
             file_summaries.append({
-                "filename": f.filename,
+                "filename": fname,
                 "bank": "UNKNOWN",
                 "account_code": "?",
                 "holder_name": "",
                 "warning": "Bank auto-detection failed. Could not determine bank layout.",
                 "status": "bank_not_detected",
                 "transactions_count": 0,
+                "total_rows_found": 0,
             })
             continue
 
-        code, holder, warn = identify_account(stream, bank, f.filename)
+        code, holder, warn = identify_account(stream, bank, fname)
         stream.seek(0)
 
         rows = extract_transactions(stream, bank, code, holder)
@@ -357,14 +319,14 @@ async def extract_statements(
         file_matched_count = 0
 
         if not df.empty:
-            df.insert(0, "File", f.filename)
+            df.insert(0, "File", fname)
             matched = df[df.Status != "NO_REGEX"]
             file_matched_count = len(matched)
             if not matched.empty:
                 frames.append(matched)
 
         file_summaries.append({
-            "filename": f.filename,
+            "filename": fname,
             "bank": bank,
             "account_code": code,
             "holder_name": holder,
@@ -389,7 +351,6 @@ async def extract_statements(
         send_df = alldf[alldf.Type == "Dr"].reset_index(drop=True)
         recv_df = alldf[alldf.Type == "Cr"].reset_index(drop=True)
 
-        # Build Send List
         for i, r in enumerate(send_df.itertuples(), 1):
             amount_val = to_float(r.Amount)
             send_total_sum += amount_val
@@ -408,7 +369,6 @@ async def extract_statements(
                 "line_text": f"{i}.{r.Account} - {r.Name} - {r.Short}",
             })
 
-        # Build Received List
         for i, r in enumerate(recv_df.itertuples(), 1):
             amount_val = to_float(r.Amount)
             received_total_sum += amount_val
@@ -456,8 +416,163 @@ async def extract_statements(
     }
 
 
+# -----------------------------------------------------------------------------
+# API Endpoints
+# -----------------------------------------------------------------------------
+
+@app.get("/api/health", response_model=HealthResponse)
+def health_check():
+    return {"status": "ok", "app": "RTGS Extractor", "version": "2.1.0"}
+
+
+@app.get("/api/banks", response_model=BanksResponse)
+def get_supported_banks():
+    _reload_config()
+    return {
+        "banks": list(bank_layouts.BANK_LAYOUTS.keys()),
+        "account_order": accounts.ACCOUNT_ORDER,
+    }
+
+
+@app.get("/api/settings", response_model=SettingsResponse)
+def get_settings():
+    _reload_config()
+    return {
+        "holder_to_code": account_codes.load_account_codes(),
+        "account_order": accounts.ACCOUNT_ORDER,
+        "supported_banks": list(bank_layouts.BANK_LAYOUTS.keys()),
+        "name_mappings_count": len(name_mappings.NAME_MAPPINGS),
+        "regex_patterns_count": sum(len(v) for v in regex_patterns.BANK_PATTERNS.values()),
+        "enterprise_banks": enterprise_banks.load_enterprise_banks(),
+    }
+
+
+@app.get("/api/enterprises", response_model=EnterpriseListResponse)
+def get_enterprises():
+    _reload_config()
+    eb_data = enterprise_banks.load_enterprise_banks()
+    return {
+        "enterprises": list(eb_data.values()),
+        "supported_banks": list(bank_layouts.BANK_LAYOUTS.keys()),
+    }
+
+
+@app.post("/api/enterprises", response_model=EnterpriseActionResponse)
+def create_or_update_enterprise(data: EnterpriseModel):
+    _reload_config()
+    code = data.code.strip().upper()
+    name = data.name.strip().upper() or code
+    banks = [b.strip().upper() for b in data.banks if b.strip()]
+    if not code:
+        raise HTTPException(status_code=400, detail="Enterprise code is required")
+    if not banks:
+        raise HTTPException(status_code=400, detail="At least one bank must be selected")
+
+    eb_data = enterprise_banks.load_enterprise_banks()
+    eb_data[code] = {
+        "code": code,
+        "name": name,
+        "banks": banks,
+    }
+    enterprise_banks.save_enterprise_banks(eb_data)
+    _reload_config()
+    return {"message": f"Enterprise '{code}' saved successfully", "enterprise": eb_data[code]}
+
+
+@app.put("/api/enterprises/{code}", response_model=EnterpriseActionResponse)
+def update_enterprise(code: str, data: EnterpriseUpdateModel):
+    _reload_config()
+    code_key = code.strip().upper()
+    eb_data = enterprise_banks.load_enterprise_banks()
+    if code_key not in eb_data:
+        raise HTTPException(status_code=404, detail=f"Enterprise '{code_key}' not found")
+
+    name = (data.name or "").strip().upper() or eb_data[code_key].get("name", code_key)
+    banks = [b.strip().upper() for b in data.banks if b.strip()]
+    if not banks:
+        raise HTTPException(status_code=400, detail="At least one bank must be selected")
+
+    eb_data[code_key] = {
+        "code": code_key,
+        "name": name,
+        "banks": banks,
+    }
+    enterprise_banks.save_enterprise_banks(eb_data)
+    _reload_config()
+    return {"message": f"Enterprise '{code_key}' updated successfully", "enterprise": eb_data[code_key]}
+
+
+@app.delete("/api/enterprises/{code}", response_model=SimpleMessageResponse)
+def delete_enterprise(code: str):
+    _reload_config()
+    code_key = code.strip().upper()
+    eb_data = enterprise_banks.load_enterprise_banks()
+    if code_key in eb_data:
+        del eb_data[code_key]
+        enterprise_banks.save_enterprise_banks(eb_data)
+        _reload_config()
+        return {"message": f"Enterprise '{code_key}' deleted successfully"}
+    raise HTTPException(status_code=404, detail=f"Enterprise '{code_key}' not found")
+
+
+@app.post("/api/settings/account-code", response_model=SimpleMessageResponse)
+def add_account_code(data: AccountCodeRequest):
+    """Safely adds or updates an account holder mapping using thread-safe JSON storage."""
+    _reload_config()
+    holder = data.holder_name.strip().upper()
+    code = data.account_code.strip().upper()
+    if not holder or not code:
+        raise HTTPException(status_code=400, detail="Holder name and Account code are required")
+
+    try:
+        is_new, msg = account_codes.add_account_code(holder, code)
+        _reload_config()
+        return {"message": msg, "status": "success" if is_new else "existing"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update account codes: {str(e)}")
+
+
+@app.post("/api/precheck", response_model=PrecheckResponse)
+async def precheck_statements(
+    files: List[UploadFile] = File(...),
+    selected_enterprise: Optional[str] = Form(None)
+):
+    """
+    Non-blocking pre-scan of uploaded statements.
+    Reads bytes asynchronously and executes statement inspection in a worker thread.
+    """
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded")
+
+    payloads = []
+    for f in files:
+        file_bytes = await f.read()
+        payloads.append((f.filename, file_bytes))
+
+    return await asyncio.to_thread(_sync_precheck, payloads, selected_enterprise)
+
+
+@app.post("/api/extract", response_model=ExtractResponse)
+async def extract_statements(
+    files: List[UploadFile] = File(...),
+    manual_banks: Optional[str] = Form(None)
+):
+    """
+    Non-blocking extraction of transactions from bank statements.
+    Reads files asynchronously and executes CPU-bound table extraction in a worker thread.
+    """
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded")
+
+    payloads = []
+    for f in files:
+        file_bytes = await f.read()
+        payloads.append((f.filename, file_bytes))
+
+    return await asyncio.to_thread(_sync_extract, payloads)
+
+
 # Mount production React build if dist exists
 dist_dir = os.path.join(BASE_DIR, "frontend", "dist")
 if os.path.exists(dist_dir):
     app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")
-
