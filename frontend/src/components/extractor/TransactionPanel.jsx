@@ -55,7 +55,13 @@ export default function TransactionPanel({
               {/* 1-Click Copy Button */}
               <button
                 type="button"
-                onClick={() => onCopySection(results.send.text, 'send', 'Send List')}
+                onClick={() => {
+                  const sendLines = (sendSearch && filteredSend.length < results.send.transactions.length)
+                    ? filteredSend.map(t => t.line_text).join('\n')
+                    : (results.send.text || results.send.transactions.map(t => t.line_text).join('\n'));
+                  const content = sendLines ? `Yesterday Send Transaction\n\n${sendLines}` : '';
+                  onCopySection(content, 'send', 'Send List');
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95"
                 title="Copy formatted 1.SS - Party - Amount lines"
               >
@@ -149,7 +155,13 @@ export default function TransactionPanel({
               {/* 1-Click Copy Button */}
               <button
                 type="button"
-                onClick={() => onCopySection(results.received.text, 'received', 'Received List')}
+                onClick={() => {
+                  const recvLines = (recvSearch && filteredRecv.length < results.received.transactions.length)
+                    ? filteredRecv.map(t => t.line_text).join('\n')
+                    : (results.received.text || results.received.transactions.map(t => t.line_text).join('\n'));
+                  const content = recvLines ? `Yesterday Received Transaction\n\n${recvLines}` : '';
+                  onCopySection(content, 'received', 'Received List');
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95"
                 title="Copy formatted 1.SS - Party - Amount lines"
               >

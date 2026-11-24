@@ -478,9 +478,9 @@ def _sync_extract(payloads: List[Tuple[str, bytes]]) -> dict:
             "text": received_formatted_lines,
         },
         "combined_text": (
-            "Send (withdrawal/debit)\n\n"
+            "Yesterday Send Transaction\n\n"
             + send_formatted_lines
-            + "\n\nReceived (credit)\n\n"
+            + "\n\nYesterday Received Transaction\n\n"
             + received_formatted_lines
             + "\n"
         ),
