@@ -15,7 +15,7 @@ Bank-wise regex. There are two per-bank dicts:
 """
 
 # Transaction type start:  RTGS/  RTGS-  RTGS:  RTGSINW...   NEFT/  NEFT-  NEFT:  NEFTINW...   IFT-   INF/
-_TXN = r"(?:RTGS|NEFT|IFT|INF)(?:INW|\s*[/:-])"
+_TXN = r"\(?\s*(?:RTGS|NEFT|IFT|INF)(?:INW|\s*[/:-])"
 
 ROW_START = {
     # DESCRIPTION column start check
@@ -77,6 +77,8 @@ BANK_PATTERNS = {
     ],
 
     "AXIS": [
+        # RTGS/CNRBR52026112152878569/VINO TH KUMAR S/CANARA BANK//FAST/FAST
+        r"(?i)^\(?\s*(?:RTGS|NEFT)\s*/\s*[^/]+/\s*([^/]+?)\s*(?:/|$)",
         # TRF/SIVARAMAN SURESHKUMAR/
         r"(?i)^TRF/([^/]+)",
     ],
