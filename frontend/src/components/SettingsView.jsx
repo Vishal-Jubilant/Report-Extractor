@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
@@ -14,8 +14,12 @@ import {
   X,
   AlertCircle
 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 export default function SettingsView({ onNotify }) {
+  const { notify } = useToast();
+  const notifyFn = onNotify || notify;
+
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -53,7 +57,7 @@ export default function SettingsView({ onNotify }) {
       }
     } catch (err) {
       console.error(err);
-      onNotify('Could not load settings from backend', 'error');
+      notifyFn('Could not load settings from backend', 'error');
     } finally {
       setLoading(false);
     }
@@ -79,7 +83,7 @@ export default function SettingsView({ onNotify }) {
   const handleAddAccountCode = async (e) => {
     e.preventDefault();
     if (!newHolder.trim() || !newCode.trim()) {
-      onNotify('Holder name and account code are required', 'warning');
+      notifyFn('Holder name and account code are required', 'warning');
       return;
     }
 
@@ -97,13 +101,13 @@ export default function SettingsView({ onNotify }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Failed to save');
 
-      onNotify(data.message, 'success');
+      notifyFn(data.message, 'success');
       setNewHolder('');
       setNewCode('');
       setShowAddForm(false);
       fetchSettings();
     } catch (err) {
-      onNotify(err.message || 'Error updating account code', 'error');
+      notifyFn(err.message || 'Error updating account code', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -156,11 +160,11 @@ export default function SettingsView({ onNotify }) {
     const name = entFormName.trim().toUpperCase() || code;
     
     if (!code) {
-      onNotify('Enterprise Code is required', 'warning');
+      notifyFn('Enterprise Code is required', 'warning');
       return;
     }
     if (entFormBanks.length === 0) {
-      onNotify('Please select at least one required bank', 'warning');
+      notifyFn('Please select at least one required bank', 'warning');
       return;
     }
 
@@ -178,7 +182,7 @@ export default function SettingsView({ onNotify }) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Failed to update enterprise');
-        onNotify(`Enterprise ${code} updated successfully`, 'success');
+        notifyFn(`Enterprise ${code} updated successfully`, 'success');
       } else {
         // POST create
         const res = await fetch('/api/enterprises', {
@@ -192,13 +196,13 @@ export default function SettingsView({ onNotify }) {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Failed to add enterprise');
-        onNotify(`Enterprise ${code} added successfully`, 'success');
+        notifyFn(`Enterprise ${code} added successfully`, 'success');
       }
 
       setShowEnterpriseModal(false);
       fetchEnterprises();
     } catch (err) {
-      onNotify(err.message || 'Error saving enterprise mapping', 'error');
+      notifyFn(err.message || 'Error saving enterprise mapping', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -216,25 +220,35 @@ export default function SettingsView({ onNotify }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Failed to delete');
 
-      onNotify(`Deleted enterprise "${code}" successfully`, 'success');
+      notifyFn(`Deleted enterprise "${code}" successfully`, 'success');
       fetchEnterprises();
     } catch (err) {
-      onNotify(err.message || 'Error deleting enterprise', 'error');
+      notifyFn(err.message || 'Error deleting enterprise', 'error');
     }
   };
 
-  const filteredHolders = settings?.holder_to_code 
-    ? Object.entries(settings.holder_to_code).filter(([holder, code]) => 
-        holder.toLowerCase().includes(search.toLowerCase()) ||
-        code.toLowerCase().includes(search.toLowerCase())
-      )
-    : [];
+  // Optimized Memoized Searches
+  const searchLower = search.trim().toLowerCase();
+  const filteredHolders = useMemo(() => {
+    if (!settings?.holder_to_code) return [];
+    const entries = Object.entries(settings.holder_to_code);
+    if (!searchLower) return entries;
+    return entries.filter(([holder, code]) => 
+      holder.toLowerCase().includes(searchLower) ||
+      code.toLowerCase().includes(searchLower)
+    );
+  }, [settings?.holder_to_code, searchLower]);
 
-  const filteredEnterprises = enterprises.filter(ent => 
-    ent.code.toLowerCase().includes(enterpriseSearch.toLowerCase()) ||
-    (ent.name && ent.name.toLowerCase().includes(enterpriseSearch.toLowerCase())) ||
-    (ent.banks && ent.banks.some(b => b.toLowerCase().includes(enterpriseSearch.toLowerCase())))
-  );
+  const enterpriseSearchLower = enterpriseSearch.trim().toLowerCase();
+  const filteredEnterprises = useMemo(() => {
+    if (!enterprises || enterprises.length === 0) return [];
+    if (!enterpriseSearchLower) return enterprises;
+    return enterprises.filter(ent => 
+      ent.code.toLowerCase().includes(enterpriseSearchLower) ||
+      (ent.name && ent.name.toLowerCase().includes(enterpriseSearchLower)) ||
+      (ent.banks && ent.banks.some(b => b.toLowerCase().includes(enterpriseSearchLower)))
+    );
+  }, [enterprises, enterpriseSearchLower]);
 
   return (
     <div className="flex-1 p-8 space-y-7 w-full h-full overflow-y-auto">

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   UploadCloud, 
   FileText, 
@@ -18,8 +18,12 @@ import {
   ArrowRight,
   X
 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 export default function ExtractorView({ onNotify, onNavigateToSettings }) {
+  const { notify } = useToast();
+  const notifyFn = onNotify || notify;
+
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -80,7 +84,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings }) {
     });
 
     if (validFiles.length < newFiles.length) {
-      onNotify('Some files were skipped. Only PDF, CSV, XLSX, and XLS are supported.', 'warning');
+      notifyFn('Some files were skipped. Only PDF, CSV, XLSX, and XLS are supported.', 'warning');
     }
 
     setFiles(prev => {
@@ -131,10 +135,10 @@ export default function ExtractorView({ onNotify, onNavigateToSettings }) {
 
       const data = await response.json();
       setResults(data);
-      onNotify(`Processed ${files.length} statement(s) successfully!`, 'success');
+      notifyFn(`Processed ${files.length} statement(s) successfully!`, 'success');
     } catch (err) {
       console.error(err);
-      onNotify(err.message || 'Extraction failed', 'error');
+      notifyFn(err.message || 'Extraction failed', 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -187,7 +191,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings }) {
     if (!text) return;
     navigator.clipboard.writeText(text);
     setCopiedSection(sectionKey);
-    onNotify(`${label} copied to clipboard!`, 'success');
+    notifyFn(`${label} copied to clipboard!`, 'success');
     setTimeout(() => {
       setCopiedSection(null);
     }, 2000);
@@ -241,18 +245,30 @@ export default function ExtractorView({ onNotify, onNavigateToSettings }) {
     setExpandedFiles(prev => ({ ...prev, [idx]: !prev[idx] }));
   };
 
-  // Filtering
-  const filteredSend = results?.send?.transactions?.filter(item => 
-    item.name?.toLowerCase().includes(sendSearch.toLowerCase()) ||
-    item.account?.toLowerCase().includes(sendSearch.toLowerCase()) ||
-    item.short?.toLowerCase().includes(sendSearch.toLowerCase())
-  ) || [];
+  // Optimized Memoized Transaction Filtering
+  const sendSearchLower = sendSearch.trim().toLowerCase();
+  const filteredSend = useMemo(() => {
+    const txs = results?.send?.transactions;
+    if (!txs || txs.length === 0) return [];
+    if (!sendSearchLower) return txs;
+    return txs.filter(item => 
+      (item.name && item.name.toLowerCase().includes(sendSearchLower)) ||
+      (item.account && item.account.toLowerCase().includes(sendSearchLower)) ||
+      (item.short && item.short.toLowerCase().includes(sendSearchLower))
+    );
+  }, [results?.send?.transactions, sendSearchLower]);
 
-  const filteredRecv = results?.received?.transactions?.filter(item => 
-    item.name?.toLowerCase().includes(recvSearch.toLowerCase()) ||
-    item.account?.toLowerCase().includes(recvSearch.toLowerCase()) ||
-    item.short?.toLowerCase().includes(recvSearch.toLowerCase())
-  ) || [];
+  const recvSearchLower = recvSearch.trim().toLowerCase();
+  const filteredRecv = useMemo(() => {
+    const txs = results?.received?.transactions;
+    if (!txs || txs.length === 0) return [];
+    if (!recvSearchLower) return txs;
+    return txs.filter(item => 
+      (item.name && item.name.toLowerCase().includes(recvSearchLower)) ||
+      (item.account && item.account.toLowerCase().includes(recvSearchLower)) ||
+      (item.short && item.short.toLowerCase().includes(recvSearchLower))
+    );
+  }, [results?.received?.transactions, recvSearchLower]);
 
   const currentSelectedEnt = enterprises.find(e => e.code === selectedEnterprise);
 
@@ -580,7 +596,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings }) {
                   filteredSend.map((tx) => (
                     <div 
                       key={tx.index}
-                      className="group flex items-center justify-between px-4 py-3 border-b border-slate-100 hover:bg-slate-50/80 transition-colors"
+                      className="group flex items-center justify-between px-4 py-3 border-b border-slate-100 hover:bg-slate-50/80 transition-colors [content-visibility:auto] [contain-intrinsic-size:52px]"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="w-6 text-center text-xs font-mono text-slate-400 font-semibold">
@@ -672,7 +688,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings }) {
                   filteredRecv.map((tx) => (
                     <div 
                       key={tx.index}
-                      className="group flex items-center justify-between px-4 py-3 border-b border-slate-100 hover:bg-slate-50/80 transition-colors"
+                      className="group flex items-center justify-between px-4 py-3 border-b border-slate-100 hover:bg-slate-50/80 transition-colors [content-visibility:auto] [contain-intrinsic-size:52px]"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="w-6 text-center text-xs font-mono text-slate-400 font-semibold">
