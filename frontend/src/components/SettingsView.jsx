@@ -819,7 +819,7 @@ export default function SettingsView({ onNotify }) {
                                 <span className={ent.banks.length > 0 ? "text-slate-900 font-bold truncate pr-2" : "text-slate-400 font-normal"}>
                                   {ent.banks.length === 0 
                                     ? "Select required banks from dropdown..." 
-                                    : `✓ ${ent.banks.join(', ')} (${ent.banks.length} selected)`}
+                                    : `${ent.banks.join(', ')} (${ent.banks.length} selected)`}
                                 </span>
                                 <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium shrink-0">
                                   <span>{openBankDropdownIdx === idx ? 'Hide Options' : 'Select Banks'}</span>
@@ -837,7 +837,7 @@ export default function SettingsView({ onNotify }) {
                                       onClick={() => setOpenBankDropdownIdx(null)}
                                       className="text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded cursor-pointer shadow-2xs"
                                     >
-                                      Done ✓
+                                      Done
                                     </button>
                                   </div>
                                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
