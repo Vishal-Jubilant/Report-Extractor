@@ -20,3 +20,12 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+
+# Environment & Credentials
+.env
+.env.*
+!.env.example
+
+# Backups
+*.bak
+
