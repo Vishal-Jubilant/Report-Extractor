@@ -631,8 +631,8 @@ export default function SettingsView({ onNotify }) {
             </div>
 
             {/* Modal Form Body */}
-            <form onSubmit={handleSaveGroup} className="flex flex-col flex-1 overflow-hidden">
-              <div className="p-6 space-y-4 pb-28 overflow-y-auto overscroll-contain flex-1">
+            <form onSubmit={handleSaveGroup} className="flex flex-col">
+              <div className="p-6 space-y-4 overflow-y-auto overscroll-contain max-h-[calc(90vh-140px)]">
                 {/* Group Name Input */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
