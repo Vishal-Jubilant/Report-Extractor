@@ -644,7 +644,7 @@ export default function SettingsView({ onNotify }) {
 
             {/* Modal Form Body */}
             <form onSubmit={handleSaveGroup} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-              <div className="p-6 space-y-4 pb-36 overflow-y-auto flex-1 min-h-0">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
                 {/* Group Name Input */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
@@ -839,16 +839,16 @@ export default function SettingsView({ onNotify }) {
                               <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-150 shrink-0 ml-2 ${openBankDropdownIdx === idx ? 'rotate-180 text-slate-900' : ''}`} />
                             </button>
 
-                            {/* Custom Dropdown Menu for Banks */}
+                            {/* Custom Dropdown Menu for Banks (Drops upwards to prevent hiding under footer) */}
                             {openBankDropdownIdx === idx && (
                               <>
                                 <div 
                                   className="fixed inset-0 z-30" 
                                   onClick={() => setOpenBankDropdownIdx(null)} 
                                 />
-                                <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 max-h-56 overflow-y-auto divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100">
-                                  <div className="px-3.5 py-1.5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                                    <span className="font-semibold">Select one or more banks:</span>
+                                <div className="absolute left-0 right-0 bottom-full mb-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 max-h-52 overflow-y-auto divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100">
+                                  <div className="px-3.5 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500 sticky top-0 z-10">
+                                    <span className="font-semibold text-slate-700">Select one or more banks:</span>
                                     <button
                                       type="button"
                                       onClick={() => setOpenBankDropdownIdx(null)}
