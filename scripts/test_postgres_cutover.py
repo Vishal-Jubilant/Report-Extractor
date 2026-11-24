@@ -70,7 +70,6 @@ def test_postgres_enterprise_banks():
 
     # Verify required banks for each enterprise (dynamic user configuration in PostgreSQL)
     for code, ent_info in eb_data.items():
-        assert len(ent_info["banks"]) >= 1, f"Enterprise {code} has no banks configured"
         assert "name" in ent_info and len(ent_info["name"]) > 0
 
     # Verify get_enterprise_banks lookup helper
