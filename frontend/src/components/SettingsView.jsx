@@ -43,7 +43,8 @@ export default function SettingsView({ onNotify }) {
   const [showAddBankModal, setShowAddBankModal] = useState(false);
   const [newBankName, setNewBankName] = useState('');
 
-  // Dropdown open state for Bank Statements in Group modal
+  // Dropdown open states for Group modal
+  const [openEnterpriseDropdownIdx, setOpenEnterpriseDropdownIdx] = useState(null);
   const [openBankDropdownIdx, setOpenBankDropdownIdx] = useState(null);
 
   // Fetch all groups
@@ -120,7 +121,8 @@ export default function SettingsView({ onNotify }) {
     setFormEnterprises([
       { id: Date.now(), name: '', isCustom: false, banks: [] }
     ]);
-    setOpenBankDropdownIdx(0);
+    setOpenEnterpriseDropdownIdx(null);
+    setOpenBankDropdownIdx(null);
     setShowGroupModal(true);
   };
 
@@ -138,7 +140,8 @@ export default function SettingsView({ onNotify }) {
           }))
         : [{ id: Date.now(), name: '', isCustom: false, banks: [] }]
     );
-    setOpenBankDropdownIdx(0);
+    setOpenEnterpriseDropdownIdx(null);
+    setOpenBankDropdownIdx(null);
     setShowGroupModal(true);
   };
 
@@ -669,129 +672,210 @@ export default function SettingsView({ onNotify }) {
 
                 {/* Enterprises List Cards */}
                 <div className="space-y-3.5 pt-1">
-                  {formEnterprises.map((ent, idx) => (
-                    <div 
-                      key={ent.id || idx} 
-                      className="p-4 rounded-xl bg-slate-50/90 border border-slate-200/90 space-y-3 shadow-2xs transition-all hover:bg-slate-50"
-                    >
-                      {/* Enterprise Card Header */}
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-mono">
-                          Enterprise #{idx + 1}
-                        </span>
-                        {formEnterprises.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveEnterpriseRow(idx)}
-                            className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                            title="Remove this enterprise"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                  {formEnterprises.map((ent, idx) => {
+                    const selectedEnt = availableEnterprises.find(
+                      a => a.code.toUpperCase() === (ent.name || '').toUpperCase()
+                    );
 
-                      {/* Enterprise Dropdown Selector */}
-                      <div className="space-y-1.5">
-                        <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider">
-                          Enterprise Name / Code <span className="text-rose-500">*</span>
-                        </label>
-                        
-                        <select
-                          value={ent.name}
-                          onChange={(e) => handleEnterpriseDropdownChange(idx, e.target.value)}
-                          required
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none shadow-2xs cursor-pointer"
-                        >
-                          <option value="">Select Enterprise...</option>
-                          {availableEnterprises.map((avail) => (
-                            <option key={avail.code} value={avail.code}>
-                              {avail.code} &mdash; {avail.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* Bank Statement Dropdown Selector for this Enterprise */}
-                      <div className="space-y-1.5 pt-1 relative">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-semibold text-slate-700 uppercase tracking-wider">
-                            Required Bank Statements <span className="text-rose-500">*</span>
-                          </span>
-                          <span className="text-slate-500 font-mono text-[11px]">
-                            {ent.banks.length} selected
-                          </span>
-                        </div>
-
-                        {/* Dropdown Toggle Header */}
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => setOpenBankDropdownIdx(openBankDropdownIdx === idx ? null : idx)}
-                            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all outline-none shadow-2xs cursor-pointer text-left ${
-                              openBankDropdownIdx === idx 
-                                ? 'bg-slate-50 border-slate-900 ring-1 ring-slate-900 text-slate-900' 
-                                : 'bg-white border-slate-200 text-slate-800 hover:border-slate-300'
-                            }`}
-                          >
-                            <span className={ent.banks.length > 0 ? "text-slate-900 font-bold" : "text-slate-500 font-medium"}>
-                              {ent.banks.length === 0 
-                                ? "Choose bank statements from list..." 
-                                : `✓ ${ent.banks.join(', ')} (${ent.banks.length} selected)`}
+                    return (
+                      <div 
+                        key={ent.id || idx} 
+                        className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/90 shadow-2xs space-y-4 transition-all"
+                      >
+                        {/* Enterprise Card Header */}
+                        <div className="flex items-center justify-between pb-3 border-b border-slate-200/70">
+                          <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-md bg-slate-900 text-white font-mono font-bold text-[11px] flex items-center justify-center">
+                              {idx + 1}
                             </span>
-                            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium shrink-0">
-                              <span>{openBankDropdownIdx === idx ? 'Hide Options' : 'Select Banks'}</span>
-                              <ChevronDown className={`w-4 h-4 transition-transform duration-150 ${openBankDropdownIdx === idx ? 'rotate-180 text-slate-900' : 'text-slate-400'}`} />
-                            </div>
-                          </button>
-
-                          {/* In-Card Expandable Bank Selector Grid (Never cut off by modal boundary!) */}
-                          {openBankDropdownIdx === idx && (
-                            <div className="mt-2 p-3.5 bg-slate-50/90 border border-slate-200/90 rounded-xl space-y-2.5 animate-in fade-in zoom-in-98 duration-100">
-                              <div className="flex items-center justify-between text-[11px] text-slate-500 pb-1.5 border-b border-slate-200/70">
-                                <span className="font-semibold text-slate-700">Click banks to select for this enterprise:</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setOpenBankDropdownIdx(null)}
-                                  className="text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded cursor-pointer shadow-2xs"
-                                >
-                                  Done ✓
-                                </button>
-                              </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                                {supportedBanks.map((b) => {
-                                  const isSelected = ent.banks.includes(b.toUpperCase());
-                                  return (
-                                    <button
-                                      type="button"
-                                      key={b}
-                                      onClick={() => toggleEnterpriseBank(idx, b)}
-                                      className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer select-none active:scale-[0.98] ${
-                                        isSelected 
-                                          ? 'bg-slate-900 border-slate-900 text-white shadow-xs' 
-                                          : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-100/60 shadow-2xs'
-                                      }`}
-                                    >
-                                      <span>{b}</span>
-                                      {isSelected ? (
-                                        <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                                          <Check className="w-2 h-2 stroke-[3]" />
-                                        </div>
-                                      ) : (
-                                        <div className="w-3.5 h-3.5 rounded-full border border-slate-300 flex items-center justify-center shrink-0 text-slate-400 text-[10px]">
-                                          +
-                                        </div>
-                                      )}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
+                            <span className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono">
+                              Enterprise #{idx + 1}
+                            </span>
+                          </div>
+                          {formEnterprises.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveEnterpriseRow(idx)}
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                              title="Remove this enterprise"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Remove</span>
+                            </button>
                           )}
                         </div>
+
+                        {/* Card Form Fields: Symmetrically Aligned Structure */}
+                        <div className="space-y-3.5">
+                          {/* 1. Custom Enterprise Dropdown */}
+                          <div className="space-y-1.5 relative">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-bold text-slate-700 uppercase tracking-wider">
+                                Enterprise Entity <span className="text-rose-500">*</span>
+                              </span>
+                              <span className="text-slate-400">Code & Registered Name</span>
+                            </div>
+
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenEnterpriseDropdownIdx(openEnterpriseDropdownIdx === idx ? null : idx);
+                                  if (openBankDropdownIdx === idx) setOpenBankDropdownIdx(null);
+                                }}
+                                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all outline-none shadow-2xs cursor-pointer text-left ${
+                                  openEnterpriseDropdownIdx === idx
+                                    ? 'bg-white border-slate-900 ring-2 ring-slate-900/10'
+                                    : 'bg-white border-slate-200 text-slate-800 hover:border-slate-300'
+                                }`}
+                              >
+                                {selectedEnt ? (
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <span className="px-2 py-0.5 rounded font-mono font-bold bg-slate-900 text-white text-[11px] tracking-wider shrink-0">
+                                      {selectedEnt.code}
+                                    </span>
+                                    <span className="font-semibold text-slate-900 truncate">
+                                      {selectedEnt.name}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-400 font-normal">
+                                    Select enterprise from list...
+                                  </span>
+                                )}
+                                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-150 shrink-0 ml-2 ${openEnterpriseDropdownIdx === idx ? 'rotate-180 text-slate-900' : ''}`} />
+                              </button>
+
+                              {/* Custom Dropdown Menu */}
+                              {openEnterpriseDropdownIdx === idx && (
+                                <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 max-h-56 overflow-y-auto divide-y divide-slate-100 animate-in fade-in zoom-in-95 duration-100">
+                                  {availableEnterprises.length === 0 ? (
+                                    <div className="px-3.5 py-2 text-xs text-slate-400 text-center">
+                                      No enterprises found. Add one from the toolbar.
+                                    </div>
+                                  ) : (
+                                    availableEnterprises.map((avail) => {
+                                      const isCurrent = ent.name === avail.code;
+                                      return (
+                                        <button
+                                          type="button"
+                                          key={avail.code}
+                                          onClick={() => {
+                                            handleEnterpriseDropdownChange(idx, avail.code);
+                                            setOpenEnterpriseDropdownIdx(null);
+                                          }}
+                                          className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs transition-colors cursor-pointer text-left ${
+                                            isCurrent 
+                                              ? 'bg-slate-900 text-white font-bold' 
+                                              : 'hover:bg-slate-50 text-slate-800 font-semibold'
+                                          }`}
+                                        >
+                                          <div className="flex items-center gap-2.5 min-w-0">
+                                            <span className={`px-2 py-0.5 rounded font-mono font-bold text-[11px] tracking-wider shrink-0 ${
+                                              isCurrent ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-800'
+                                            }`}>
+                                              {avail.code}
+                                            </span>
+                                            <span className="truncate">
+                                              {avail.name}
+                                            </span>
+                                          </div>
+                                          {isCurrent && (
+                                            <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3] shrink-0" />
+                                          )}
+                                        </button>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 2. Custom Bank Statement Dropdown */}
+                          <div className="space-y-1.5 pt-0.5">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-bold text-slate-700 uppercase tracking-wider">
+                                Required Bank Statements <span className="text-rose-500">*</span>
+                              </span>
+                              <span className="text-slate-500 font-mono text-[11px]">
+                                {ent.banks.length} selected
+                              </span>
+                            </div>
+
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenBankDropdownIdx(openBankDropdownIdx === idx ? null : idx);
+                                  if (openEnterpriseDropdownIdx === idx) setOpenEnterpriseDropdownIdx(null);
+                                }}
+                                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition-all outline-none shadow-2xs cursor-pointer text-left ${
+                                  openBankDropdownIdx === idx 
+                                    ? 'bg-slate-50 border-slate-900 ring-1 ring-slate-900 text-slate-900' 
+                                    : 'bg-white border-slate-200 text-slate-800 hover:border-slate-300'
+                                }`}
+                              >
+                                <span className={ent.banks.length > 0 ? "text-slate-900 font-bold truncate pr-2" : "text-slate-400 font-normal"}>
+                                  {ent.banks.length === 0 
+                                    ? "Select required banks from dropdown..." 
+                                    : `✓ ${ent.banks.join(', ')} (${ent.banks.length} selected)`}
+                                </span>
+                                <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium shrink-0">
+                                  <span>{openBankDropdownIdx === idx ? 'Hide Options' : 'Select Banks'}</span>
+                                  <ChevronDown className={`w-4 h-4 transition-transform duration-150 ${openBankDropdownIdx === idx ? 'rotate-180 text-slate-900' : 'text-slate-400'}`} />
+                                </div>
+                              </button>
+
+                              {/* In-Card Expandable Bank Selector Grid */}
+                              {openBankDropdownIdx === idx && (
+                                <div className="mt-2 p-3.5 bg-slate-50/90 border border-slate-200/90 rounded-xl space-y-2.5 animate-in fade-in zoom-in-98 duration-100">
+                                  <div className="flex items-center justify-between text-[11px] text-slate-500 pb-1.5 border-b border-slate-200/70">
+                                    <span className="font-semibold text-slate-700">Click banks to select for this enterprise:</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setOpenBankDropdownIdx(null)}
+                                      className="text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded cursor-pointer shadow-2xs"
+                                    >
+                                      Done ✓
+                                    </button>
+                                  </div>
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                                    {supportedBanks.map((b) => {
+                                      const isSelected = ent.banks.includes(b.toUpperCase());
+                                      return (
+                                        <button
+                                          type="button"
+                                          key={b}
+                                          onClick={() => toggleEnterpriseBank(idx, b)}
+                                          className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs font-mono font-bold transition-all cursor-pointer select-none active:scale-[0.98] ${
+                                            isSelected 
+                                              ? 'bg-slate-900 border-slate-900 text-white shadow-xs' 
+                                              : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-100/60 shadow-2xs'
+                                          }`}
+                                        >
+                                          <span>{b}</span>
+                                          {isSelected ? (
+                                            <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                                              <Check className="w-2 h-2 stroke-[3]" />
+                                            </div>
+                                          ) : (
+                                            <div className="w-3.5 h-3.5 rounded-full border border-slate-300 flex items-center justify-center shrink-0 text-slate-400 text-[10px]">
+                                              +
+                                            </div>
+                                          )}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
