@@ -5,9 +5,7 @@ import {
   Check, 
   Key, 
   Building, 
-  Building2,
-  ListOrdered, 
-  RefreshCw,
+  Building2, 
   Save,
   Trash2,
   Edit2,
@@ -260,17 +258,9 @@ export default function SettingsView({ onNotify }) {
             System Configuration
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage statement account holder mappings, enterprise bank rules, and sort order.
+            Manage statement account holder mappings and enterprise bank rules.
           </p>
         </div>
-
-        <button
-          onClick={fetchSettings}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all shadow-2xs self-start md:self-auto cursor-pointer"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Reload Config
-        </button>
       </div>
 
       {/* Account Codes Section */}
@@ -382,31 +372,6 @@ export default function SettingsView({ onNotify }) {
               <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-slate-200 text-slate-800 border border-slate-300 shrink-0">
                 {code}
               </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Account Order Section */}
-      <div className="rounded-2xl bg-white p-6 space-y-4 border border-slate-200 shadow-2xs">
-        <div className="flex items-center gap-2.5">
-          <ListOrdered className="w-5 h-5 text-slate-700" />
-          <h2 className="text-base font-bold text-slate-900 tracking-tight">
-            Account Sort Order Sequence
-          </h2>
-        </div>
-        <p className="text-sm text-slate-500">
-          Determines the order accounts appear in the Send &amp; Received lists (<code className="font-mono text-slate-800">config/accounts.py</code>).
-        </p>
-
-        <div className="flex flex-wrap items-center gap-2.5 pt-1">
-          {(settings?.account_order || ["SS", "SN", "RE", "ACE", "SSH", "ASQ", "JC"]).map((code, idx) => (
-            <div 
-              key={code}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-sm font-mono font-bold text-slate-800"
-            >
-              <span className="text-xs text-slate-400 font-normal">{idx + 1}.</span>
-              <span>{code}</span>
             </div>
           ))}
         </div>
