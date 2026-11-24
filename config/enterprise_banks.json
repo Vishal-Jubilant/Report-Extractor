@@ -1,0 +1,47 @@
+{
+  "JC": {
+    "code": "JC",
+    "name": "JC ENTERPRISE",
+    "banks": [
+      "KOTAK",
+      "IDFC"
+    ]
+  },
+  "ACE": {
+    "code": "ACE",
+    "name": "ACE ENTERPRISES",
+    "banks": [
+      "IDBI"
+    ]
+  },
+  "RE": {
+    "code": "RE",
+    "name": "ROHIT ENTERPRISES",
+    "banks": [
+      "ICICI",
+      "AXIS"
+    ]
+  },
+  "SS": {
+    "code": "SS",
+    "name": "SUDHAKAR S",
+    "banks": [
+      "ICICI"
+    ]
+  },
+  "SN": {
+    "code": "SN",
+    "name": "NIRMALA S",
+    "banks": [
+      "ICICI"
+    ]
+  },
+  "ASQ": {
+    "code": "ASQ",
+    "name": "A SQUARE ENTERPRISES",
+    "banks": [
+      "KOTAK",
+      "IDBI"
+    ]
+  }
+}
