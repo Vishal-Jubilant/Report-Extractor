@@ -962,7 +962,7 @@ export default function SettingsView({ onNotify }) {
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Configured Banks ({supportedBanks.length})
                   </label>
-                  <span className="text-[11px] text-slate-400">Core Parsers & Custom Banks</span>
+                  <span className="text-[11px] text-slate-400">Active Statement Options</span>
                 </div>
 
                 <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl max-h-48 overflow-y-auto flex flex-wrap gap-2">
@@ -971,17 +971,11 @@ export default function SettingsView({ onNotify }) {
                     return (
                       <div
                         key={bName}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider transition-all shadow-2xs ${
-                          isCore 
-                            ? 'bg-white border border-slate-200 text-slate-800' 
-                            : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
-                        }`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider bg-white border border-slate-200 text-slate-800 shadow-2xs transition-all"
                       >
                         <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
                         <span>{bName}</span>
-                        {isCore ? (
-                          <span className="text-[10px] font-sans font-medium text-slate-400 bg-slate-100 px-1 py-0.5 rounded">Core</span>
-                        ) : (
+                        {!isCore && (
                           <button
                             type="button"
                             onClick={() => handleDeleteBank(bName)}
