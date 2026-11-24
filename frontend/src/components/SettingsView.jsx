@@ -687,62 +687,25 @@ export default function SettingsView({ onNotify }) {
                         )}
                       </div>
 
-                      {/* Enterprise Dropdown Selector (2nd Image specification) */}
+                      {/* Enterprise Dropdown Selector */}
                       <div className="space-y-1.5">
                         <label className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider">
                           Enterprise Name / Code <span className="text-rose-500">*</span>
                         </label>
                         
-                        {!ent.isCustom ? (
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={ent.name}
-                              onChange={(e) => handleEnterpriseDropdownChange(idx, e.target.value)}
-                              required
-                              className="flex-1 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none shadow-2xs cursor-pointer"
-                            >
-                              <option value="">Select Enterprise...</option>
-                              {availableEnterprises.map((avail) => (
-                                <option key={avail.code} value={avail.code}>
-                                  {avail.code} &mdash; {avail.name}
-                                </option>
-                              ))}
-                              <option value="__NEW__">&#43; Type New / Custom Enterprise...</option>
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => handleEnterpriseDropdownChange(idx, '__NEW__')}
-                              className="px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 shrink-0 cursor-pointer"
-                              title="Type custom name"
-                            >
-                              Custom
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              placeholder="e.g. SS, SN, or JC ENTERPRISE"
-                              value={ent.name}
-                              onChange={(e) => handleEnterpriseCustomNameChange(idx, e.target.value)}
-                              required
-                              autoFocus
-                              className="flex-1 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const updated = [...formEnterprises];
-                                updated[idx].isCustom = false;
-                                setFormEnterprises(updated);
-                              }}
-                              className="px-2.5 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 shrink-0 cursor-pointer"
-                              title="Choose from list"
-                            >
-                              List
-                            </button>
-                          </div>
-                        )}
+                        <select
+                          value={ent.name}
+                          onChange={(e) => handleEnterpriseDropdownChange(idx, e.target.value)}
+                          required
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none shadow-2xs cursor-pointer"
+                        >
+                          <option value="">Select Enterprise...</option>
+                          {availableEnterprises.map((avail) => (
+                            <option key={avail.code} value={avail.code}>
+                              {avail.code} &mdash; {avail.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
                       {/* Bank Statement Dropdown Selector for this Enterprise */}
