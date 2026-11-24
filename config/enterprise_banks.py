@@ -80,8 +80,8 @@ def save_group(group_name: str, enterprises_list: List[dict], old_group_name: Op
 
         saved_items = []
         for item in enterprises_list:
-            name = item.get("name", "").strip().upper()
-            code = (item.get("code") or name).strip().upper()
+            raw_name = item.get("name", "").strip().upper()
+            code = (item.get("code") or raw_name).strip().upper()
             banks = [b.strip().upper() for b in item.get("banks", []) if b.strip()]
             if not code:
                 continue
@@ -89,10 +89,16 @@ def save_group(group_name: str, enterprises_list: List[dict], old_group_name: Op
             ent = session.query(Enterprise).filter_by(code=code).first()
             if ent:
                 ent.group_name = grp
-                ent.name = name
+                # Preserve existing full name if raw_name is empty or identical to code
+                if raw_name and raw_name != code:
+                    ent.name = raw_name
+                elif not ent.name:
+                    ent.name = raw_name or code
+                final_name = ent.name
                 session.query(EnterpriseBank).filter_by(enterprise_id=ent.id).delete()
             else:
-                ent = Enterprise(group_name=grp, code=code, name=name)
+                final_name = raw_name or code
+                ent = Enterprise(group_name=grp, code=code, name=final_name)
                 session.add(ent)
                 session.flush()
 
@@ -101,17 +107,17 @@ def save_group(group_name: str, enterprises_list: List[dict], old_group_name: Op
 
             saved_items.append({
                 "code": code,
-                "name": name,
+                "name": final_name,
                 "banks": banks
             })
 
             # Auto-sync with account_codes
             from backend.database.models import AccountCode
-            existing_ac = session.query(AccountCode).filter_by(holder_name=name).first()
+            existing_ac = session.query(AccountCode).filter_by(holder_name=final_name).first()
             if existing_ac:
                 existing_ac.account_code = code
             else:
-                session.add(AccountCode(holder_name=name, account_code=code))
+                session.add(AccountCode(holder_name=final_name, account_code=code))
 
         session.commit()
 

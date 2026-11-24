@@ -126,7 +126,7 @@ export default function SettingsView({ onNotify }) {
     setEditingGroupName(null);
     setFormGroupName('');
     setFormEnterprises([
-      { id: Date.now(), name: '', isCustom: false, banks: [] }
+      { id: Date.now(), code: '', name: '', isCustom: false, banks: [] }
     ]);
     setOpenEnterpriseDropdownIdx(null);
     setOpenBankDropdownIdx(null);
@@ -139,13 +139,18 @@ export default function SettingsView({ onNotify }) {
     setFormGroupName(grp.group_name);
     setFormEnterprises(
       (grp.enterprises && grp.enterprises.length > 0)
-        ? grp.enterprises.map((e, idx) => ({
-            id: Date.now() + idx,
-            name: e.code || e.name,
-            isCustom: false,
-            banks: e.banks || []
-          }))
-        : [{ id: Date.now(), name: '', isCustom: false, banks: [] }]
+        ? grp.enterprises.map((e, idx) => {
+            const entCode = (e.code || e.name || '').toUpperCase();
+            const matched = availableEnterprises.find(a => a.code.toUpperCase() === entCode);
+            return {
+              id: Date.now() + idx,
+              code: entCode,
+              name: (matched?.name || e.name || entCode).toUpperCase(),
+              isCustom: false,
+              banks: e.banks || []
+            };
+          })
+        : [{ id: Date.now(), code: '', name: '', isCustom: false, banks: [] }]
     );
     setOpenEnterpriseDropdownIdx(null);
     setOpenBankDropdownIdx(null);
@@ -157,7 +162,7 @@ export default function SettingsView({ onNotify }) {
     const newIdx = formEnterprises.length;
     setFormEnterprises([
       ...formEnterprises,
-      { id: Date.now(), name: '', isCustom: false, banks: [] }
+      { id: Date.now(), code: '', name: '', isCustom: false, banks: [] }
     ]);
     setOpenBankDropdownIdx(null);
     setOpenEnterpriseDropdownIdx(newIdx);
@@ -174,10 +179,13 @@ export default function SettingsView({ onNotify }) {
     const updated = [...formEnterprises];
     if (selectedVal === '__NEW__') {
       updated[idx].isCustom = true;
+      updated[idx].code = '';
       updated[idx].name = '';
     } else {
       updated[idx].isCustom = false;
-      updated[idx].name = selectedVal;
+      const matched = availableEnterprises.find(a => a.code.toUpperCase() === selectedVal.toUpperCase());
+      updated[idx].code = selectedVal.toUpperCase();
+      updated[idx].name = (matched?.name || selectedVal).toUpperCase();
     }
     setFormEnterprises(updated);
   };
@@ -185,6 +193,7 @@ export default function SettingsView({ onNotify }) {
   const handleEnterpriseCustomNameChange = (idx, val) => {
     const updated = [...formEnterprises];
     updated[idx].name = val.toUpperCase();
+    updated[idx].code = val.toUpperCase();
     setFormEnterprises(updated);
   };
 
@@ -216,12 +225,13 @@ export default function SettingsView({ onNotify }) {
 
     for (let i = 0; i < formEnterprises.length; i++) {
       const ent = formEnterprises[i];
-      if (!ent.name.trim()) {
+      const entIdentifier = ent.code || ent.name;
+      if (!entIdentifier.trim()) {
         notifyFn(`Enterprise #${i + 1} Name cannot be empty`, 'warning');
         return;
       }
       if (!ent.banks || ent.banks.length === 0) {
-        notifyFn(`Please select at least one bank statement for Enterprise "${ent.name}"`, 'warning');
+        notifyFn(`Please select at least one bank statement for Enterprise "${ent.name || ent.code}"`, 'warning');
         return;
       }
     }
@@ -230,11 +240,18 @@ export default function SettingsView({ onNotify }) {
       setIsSubmitting(true);
       const payload = {
         group_name: grp,
-        enterprises: formEnterprises.map(item => ({
-          name: item.name.trim().toUpperCase(),
-          code: item.name.trim().toUpperCase(),
-          banks: item.banks
-        }))
+        enterprises: formEnterprises.map(item => {
+          const entCode = (item.code || item.name || '').trim().toUpperCase();
+          const matched = availableEnterprises.find(a => a.code.toUpperCase() === entCode);
+          const entName = item.isCustom 
+            ? item.name.trim().toUpperCase() 
+            : (matched?.name || item.name || entCode).trim().toUpperCase();
+          return {
+            code: entCode,
+            name: entName,
+            banks: item.banks
+          };
+        })
       };
 
       const url = editingGroupName ? `/api/groups/${encodeURIComponent(editingGroupName)}` : '/api/groups';
@@ -690,8 +707,9 @@ export default function SettingsView({ onNotify }) {
                 {/* Enterprises List Cards */}
                 <div className="space-y-3.5 pt-1">
                   {formEnterprises.map((ent, idx) => {
+                    const entCode = (ent.code || ent.name || '').toUpperCase();
                     const selectedEnt = availableEnterprises.find(
-                      a => a.code.toUpperCase() === (ent.name || '').toUpperCase()
+                      a => a.code.toUpperCase() === entCode
                     );
 
                     return (
@@ -787,11 +805,11 @@ export default function SettingsView({ onNotify }) {
                                     </div>
                                   ) : (
                                     availableEnterprises.map((avail) => {
-                                      const isCurrent = (ent.name || '').toUpperCase() === avail.code.toUpperCase();
+                                      const isCurrent = entCode === avail.code.toUpperCase();
                                       
                                       // Check if already selected in another row in the current modal form
                                       const selectedRowIdx = formEnterprises.findIndex((other, oIdx) => 
-                                        oIdx !== idx && (other.name || '').toUpperCase() === avail.code.toUpperCase()
+                                        oIdx !== idx && (other.code || other.name || '').toUpperCase() === avail.code.toUpperCase()
                                       );
                                       const isSelectedInOtherRow = selectedRowIdx !== -1;
 

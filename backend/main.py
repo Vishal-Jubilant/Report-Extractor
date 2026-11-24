@@ -544,9 +544,18 @@ def get_distinct_enterprises():
     _reload_config()
     with get_worker_session() as session:
         ents = session.query(Enterprise).order_by(Enterprise.code).all()
+        # Fallback map for full holder names in account codes if an enterprise name equals its code
+        ac_map = {
+            a.account_code: a.holder_name 
+            for a in session.query(AccountCode).all() 
+            if a.holder_name != a.account_code
+        }
         return {
             "enterprises": [
-                {"code": e.code, "name": e.name}
+                {
+                    "code": e.code, 
+                    "name": e.name if (e.name and e.name != e.code) else (ac_map.get(e.code) or e.name or e.code)
+                }
                 for e in ents
             ]
         }
