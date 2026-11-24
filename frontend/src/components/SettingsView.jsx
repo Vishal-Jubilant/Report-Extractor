@@ -21,12 +21,7 @@ export default function SettingsView({ onNotify }) {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
-  // New Account Code Form
-  const [newHolder, setNewHolder] = useState('');
-  const [newCode, setNewCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
 
   // Enterprise Bank Mapping State
   const [enterprises, setEnterprises] = useState([]);
@@ -77,39 +72,6 @@ export default function SettingsView({ onNotify }) {
   useEffect(() => {
     fetchSettings();
   }, []);
-
-  const handleAddAccountCode = async (e) => {
-    e.preventDefault();
-    if (!newHolder.trim() || !newCode.trim()) {
-      notifyFn('Holder name and account code are required', 'warning');
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const res = await fetch('/api/settings/account-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          holder_name: newHolder.trim(),
-          account_code: newCode.trim(),
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Failed to save');
-
-      notifyFn(data.message, 'success');
-      setNewHolder('');
-      setNewCode('');
-      setShowAddForm(false);
-      fetchSettings();
-    } catch (err) {
-      notifyFn(err.message || 'Error updating account code', 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   // Open modal to Add Enterprise Mapping
   const openAddEnterpriseModal = () => {
@@ -279,72 +241,7 @@ export default function SettingsView({ onNotify }) {
               Read automatically from inside statement files (<code className="font-mono text-slate-800">config/account_codes.py</code>)
             </p>
           </div>
-
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            {showAddForm ? 'Cancel' : 'Add New Mapping'}
-          </button>
         </div>
-
-        {/* Quick Add Form Drawer */}
-        {showAddForm && (
-          <form 
-            onSubmit={handleAddAccountCode}
-            className="p-5 rounded-xl bg-slate-50 border border-slate-200 space-y-4"
-          >
-            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Add Statement Holder Mapping
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                  ACCOUNT HOLDER NAME (in statement)
-                </label>
-                <input 
-                  type="text"
-                  placeholder="e.g. BALAJI TRADERS"
-                  value={newHolder}
-                  onChange={(e) => setNewHolder(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg bg-white border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-800 uppercase"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                  ACCOUNT CODE (short label)
-                </label>
-                <input 
-                  type="text"
-                  placeholder="e.g. BT or SS"
-                  value={newCode}
-                  onChange={(e) => setNewCode(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg bg-white border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-800 uppercase"
-                  required
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-1">
-              <button
-                type="button"
-                onClick={() => setShowAddForm(false)}
-                className="px-3.5 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-800 cursor-pointer"
-              >
-                Close
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-all cursor-pointer shadow-xs"
-              >
-                <Save className="w-4 h-4" />
-                {isSubmitting ? 'Saving...' : 'Save to Config'}
-              </button>
-            </div>
-          </form>
-        )}
 
         {/* Search */}
         <div className="relative">
