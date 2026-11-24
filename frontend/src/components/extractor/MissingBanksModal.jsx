@@ -47,7 +47,7 @@ export default function MissingBanksModal({
       onClick={handleBackdropClick}
     >
       <div 
-        className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col space-y-0"
+        className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col space-y-0"
         onClick={(e) => e.stopPropagation()}
       >
         
