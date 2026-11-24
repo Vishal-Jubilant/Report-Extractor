@@ -436,9 +436,6 @@ export default function SettingsView({ onNotify }) {
                 <h2 className="text-base font-bold text-slate-900 tracking-tight">
                   Enterprises &amp; Group Configurations
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                  {filteredGroups.length} {filteredGroups.length === 1 ? 'Group' : 'Groups'}
-                </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
                 Manage group codes, registered enterprise names, and required bank statement rules.
@@ -612,7 +609,6 @@ export default function SettingsView({ onNotify }) {
         {/* Table Footer Summary */}
         <div className="px-6 py-3.5 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
           <span>Total Groups: {filteredGroups.length}</span>
-          <span>Single Source of Truth: PostgreSQL</span>
         </div>
       </div>
 
