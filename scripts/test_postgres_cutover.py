@@ -75,7 +75,7 @@ def test_postgres_enterprise_banks():
     # Verify get_enterprise_banks lookup helper
     jc_banks = enterprise_banks.get_enterprise_banks("JC")
     assert len(jc_banks) >= 1
-    ace_banks = enterprise_banks.get_enterprise_banks("ACE ENTERPRISES")
+    ace_banks = enterprise_banks.get_enterprise_banks("ACE")
     assert len(ace_banks) >= 1
 
     # Test enterprise CRUD
