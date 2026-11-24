@@ -58,10 +58,10 @@ export default function MissingBanksModal({
           </div>
           <div className="flex-1 min-w-0 pr-2">
             <h2 id="missing-banks-modal-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              Missing Bank Statement Warning
+              Missing Statements &amp; Group Requirements
             </h2>
             <p id="missing-banks-modal-description" className="text-xs sm:text-sm text-slate-500 mt-0.5 leading-relaxed">
-              Expected bank statement(s) are missing from the uploaded files for this enterprise.
+              Required enterprise statement files or configured bank statements are missing from your uploaded files.
             </p>
           </div>
           <button 
@@ -75,14 +75,18 @@ export default function MissingBanksModal({
         </div>
 
         {/* Missing Details Per Enterprise */}
-        <div className="px-6 py-4 space-y-3.5 max-h-[320px] overflow-y-auto overscroll-contain">
+        <div className="px-6 py-4 space-y-3.5 max-h-[340px] overflow-y-auto overscroll-contain">
           {warningData.enterprises.map((ent) => (
             <div 
               key={ent.code} 
-              className="p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-3 transition-colors hover:bg-slate-50"
+              className={`p-4 rounded-xl border space-y-3 transition-colors ${
+                ent.is_entire_enterprise_missing 
+                  ? 'bg-rose-50/40 border-rose-200/90' 
+                  : 'bg-slate-50/80 border-slate-200/80 hover:bg-slate-50'
+              }`}
             >
               {/* Enterprise Header */}
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-slate-900 text-white shrink-0 shadow-2xs">
                     {ent.code}
@@ -90,18 +94,33 @@ export default function MissingBanksModal({
                   <span className="text-sm font-bold text-slate-900 truncate">
                     {ent.name}
                   </span>
+                  {ent.group_name && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                      Group: {ent.group_name}
+                    </span>
+                  )}
                 </div>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/80 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                  {ent.missing_banks.length} Missing
+                  {ent.is_entire_enterprise_missing ? 'Enterprise Statement Missing' : `${ent.missing_banks.length} Bank(s) Missing`}
                 </span>
               </div>
+
+              {/* Callout when entire enterprise is missing */}
+              {ent.is_entire_enterprise_missing && (
+                <div className="p-2.5 rounded-lg bg-rose-100/60 border border-rose-200 text-xs text-rose-900 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" aria-hidden="true" />
+                  <span>
+                    No statement files were selected for <strong>{ent.name || ent.code}</strong> (Required by <strong>{ent.group_name || 'Group'}</strong>).
+                  </span>
+                </div>
+              )}
 
               {/* Missing Banks Alert */}
               <div className="space-y-1.5">
                 <p className="text-[11px] font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
                   <XCircle className="w-3.5 h-3.5 text-rose-500" aria-hidden="true" /> 
-                  Missing Bank Statement(s):
+                  Required Bank Statement(s):
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {ent.missing_banks.map((b) => (

@@ -142,6 +142,8 @@ class PrecheckEnterpriseItem(BaseModel):
     expected_banks: List[str]
     uploaded_banks: List[str]
     missing_banks: List[str]
+    group_name: Optional[str] = None
+    is_entire_enterprise_missing: bool = False
 
 
 class PrecheckResponse(BaseModel):
@@ -234,14 +236,41 @@ def _sync_precheck(
             "holder_name": holder,
         })
 
+    # Step 1: Detect which Groups are active based on uploaded statements
+    active_groups = set()
+    for code in detected_codes:
+        matched = eb_data.get(code)
+        if not matched:
+            for k, v in eb_data.items():
+                if v.get("name", "").strip().upper() == code or k.strip().upper() == code:
+                    matched = v
+                    break
+        if matched and matched.get("group_name"):
+            grp_val = matched["group_name"].strip().upper()
+            if grp_val:
+                active_groups.add(grp_val)
+
+    # Step 2: Build target enterprises
     sel = (selected_enterprise or "").strip().upper()
     target_codes = []
+    seen_codes = set()
+
     if sel and sel not in ("ALL", "AUTO", ""):
         target_codes = [sel]
-    elif detected_codes:
-        target_codes = list(detected_codes)
     else:
-        target_codes = []
+        # Include all enterprises belonging to the active groups of uploaded statements
+        for code, ent_info in eb_data.items():
+            grp = (ent_info.get("group_name") or "").strip().upper()
+            if grp and grp in active_groups:
+                if code not in seen_codes:
+                    target_codes.append(code)
+                    seen_codes.add(code)
+
+        # Include any standalone detected enterprises
+        for code in detected_codes:
+            if code not in seen_codes:
+                target_codes.append(code)
+                seen_codes.add(code)
 
     enterprise_summaries = []
     has_missing = False
@@ -251,6 +280,7 @@ def _sync_precheck(
         if ent_info:
             expected_banks = [b.upper() for b in ent_info.get("banks", [])]
             ent_name = ent_info.get("name", tcode)
+            ent_group = ent_info.get("group_name")
         else:
             matched = None
             for k, v in eb_data.items():
@@ -260,28 +290,36 @@ def _sync_precheck(
             if matched:
                 expected_banks = [b.upper() for b in matched.get("banks", [])]
                 ent_name = matched.get("name", tcode)
+                ent_group = matched.get("group_name")
                 tcode = matched.get("code", tcode)
             else:
                 expected_banks = []
                 ent_name = tcode
+                ent_group = None
 
         if not expected_banks:
             continue
 
-        if sel and sel not in ("ALL", "AUTO", ""):
-            uploaded_for_ent = [
-                finfo["bank"].upper() for finfo in uploaded_files_info if finfo["bank"]
-            ]
-        else:
-            uploaded_for_ent = [
-                finfo["bank"].upper() for finfo in uploaded_files_info 
-                if finfo["bank"] and finfo["account_code"] == tcode
-            ]
-            if not uploaded_for_ent:
-                uploaded_for_ent = list(detected_banks_overall)
+        # Find uploaded banks specifically for this enterprise
+        uploaded_for_ent = []
+        for finfo in uploaded_files_info:
+            f_code = (finfo.get("account_code") or "").strip().upper()
+            f_bank = (finfo.get("bank") or "").strip().upper()
+            f_holder = (finfo.get("holder_name") or "").strip().upper()
+            f_name = (finfo.get("filename") or "").strip().upper()
+
+            matches_ent = (
+                f_code == tcode or
+                f_code == ent_name.upper() or
+                (f_holder and (tcode in f_holder or ent_name.upper() in f_holder)) or
+                (tcode and tcode in f_name)
+            )
+            if matches_ent and f_bank:
+                uploaded_for_ent.append(f_bank)
 
         uploaded_unique = sorted(list(set(uploaded_for_ent)))
         missing = [b for b in expected_banks if b not in uploaded_unique]
+        is_entire_enterprise_missing = (len(uploaded_unique) == 0)
 
         if missing:
             has_missing = True
@@ -292,6 +330,8 @@ def _sync_precheck(
             "expected_banks": expected_banks,
             "uploaded_banks": uploaded_unique,
             "missing_banks": missing,
+            "group_name": ent_group,
+            "is_entire_enterprise_missing": is_entire_enterprise_missing,
         })
 
     return {
