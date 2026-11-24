@@ -235,159 +235,167 @@ export default function SettingsView({ onNotify }) {
             System Configuration
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Manage statement account holder mappings and enterprise bank rules.
+            Manage group mappings, enterprise entities, and mandatory bank statement rules.
           </p>
         </div>
       </div>
 
-      {/* Account Codes Section */}
-      <div className="rounded-2xl bg-white p-6 space-y-5 border border-slate-200 shadow-2xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <Key className="w-5 h-5 text-slate-700" />
-              <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                Account Holder Name &rarr; Account Code Mappings
-              </h2>
+      {/* Unified Enterprise Table */}
+      <div className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs overflow-hidden">
+        {/* Table Toolbar */}
+        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <Building2 className="w-5 h-5 text-white" aria-hidden="true" />
             </div>
-            <p className="text-sm text-slate-500 mt-1">
-              Read automatically from inside statement files (<code className="font-mono text-slate-800">config/account_codes.py</code>)
-            </p>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search account holder or code..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 focus:bg-white transition-all"
-          />
-        </div>
-
-        {/* Codes Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-          {filteredHolders.map(([holder, code]) => (
-            <div 
-              key={holder}
-              className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-white transition-all group"
-            >
-              <div className="min-w-0 pr-2">
-                <p className="text-sm font-bold text-slate-800 truncate font-mono">
-                  {holder}
-                </p>
-                <p className="text-xs text-slate-400 mt-0.5">Holder Name</p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                  Enterprises &amp; Group Configurations
+                </h2>
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                  {filteredEnterprises.length} {filteredEnterprises.length === 1 ? 'Entry' : 'Entries'}
+                </span>
               </div>
-              <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-slate-200 text-slate-800 border border-slate-300 shrink-0">
-                {code}
-              </span>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Manage group codes, registered enterprise names, and required bank statement rules.
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* NEW: Enterprise Bank Requirements Management (Replaces static bank card) */}
-      <div className="rounded-2xl bg-white p-6 space-y-5 border border-slate-200 shadow-2xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <Building2 className="w-5 h-5 text-indigo-600" />
-              <h2 className="text-base font-bold text-slate-900 tracking-tight">
-                Enterprise Bank Statements &amp; Requirements
-              </h2>
-            </div>
-            <p className="text-sm text-slate-500 mt-1">
-              Configure which bank statements are expected for each enterprise (e.g. JC expects Kotak &amp; IDFC; ACE expects IDBI). Missing banks trigger a confirmation warning before processing.
-            </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openAddEnterpriseModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95 shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            Add Enterprise Banks
-          </button>
-        </div>
+          <div className="flex items-center gap-3">
+            {/* Search Input */}
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                value={enterpriseSearch}
+                onChange={(e) => setEnterpriseSearch(e.target.value)}
+                placeholder="Search group, enterprise, bank..."
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white focus:ring-1 focus:ring-slate-900 transition-all shadow-2xs"
+              />
+            </div>
 
-        {/* Search for Enterprise */}
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={enterpriseSearch}
-            onChange={(e) => setEnterpriseSearch(e.target.value)}
-            placeholder="Search enterprise name, code, or bank (e.g. JC, Kotak)..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:bg-white transition-all"
-          />
-        </div>
-
-        {/* Enterprise Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pt-1">
-          {filteredEnterprises.map((ent) => (
-            <div 
-              key={ent.code}
-              className="p-4 rounded-xl bg-slate-50/80 border border-slate-200 hover:border-slate-300 hover:bg-white transition-all flex flex-col justify-between group shadow-2xs"
+            {/* Add Enterprise Button */}
+            <button
+              type="button"
+              onClick={openAddEnterpriseModal}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-[0.98] shrink-0"
             >
-              <div>
-                <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-200/60">
-                  <div>
-                    <span className="px-2 py-0.5 rounded text-xs font-mono font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <Plus className="w-4 h-4" />
+              <span>Add Enterprise</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Responsive Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3.5 w-16 text-center">
+                  S.No
+                </th>
+                <th scope="col" className="px-6 py-3.5 w-44">
+                  Group Name
+                </th>
+                <th scope="col" className="px-6 py-3.5 min-w-[200px]">
+                  Enterprises Name
+                </th>
+                <th scope="col" className="px-6 py-3.5 min-w-[220px]">
+                  Required Bank Statements
+                </th>
+                <th scope="col" className="px-6 py-3.5 w-28 text-right">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-sm">
+              {filteredEnterprises.map((ent, idx) => (
+                <tr 
+                  key={ent.code}
+                  className="hover:bg-slate-50/70 transition-colors group"
+                >
+                  {/* S.No */}
+                  <td className="px-6 py-4 text-center font-mono text-xs font-semibold text-slate-400 tabular-nums">
+                    {String(idx + 1).padStart(2, '0')}
+                  </td>
+
+                  {/* Group Name (Code) */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-slate-900 text-white shadow-2xs tracking-wide">
                       {ent.code}
                     </span>
-                    <h3 className="text-sm font-bold text-slate-900 mt-1.5">
-                      {ent.name || ent.code}
-                    </h3>
-                  </div>
-                  
-                  <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => openEditEnterpriseModal(ent)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors cursor-pointer"
-                      title="Edit required banks"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteEnterprise(ent.code)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                      title="Delete enterprise"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                  </td>
 
-                <div className="pt-3">
-                  <p className="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">
-                    Expected Bank Statements ({ent.banks?.length || 0}):
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {(ent.banks || []).map((b) => (
-                      <span 
-                        key={b}
-                        className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-white text-slate-800 border border-slate-200 shadow-2xs flex items-center gap-1"
+                  {/* Enterprises Name */}
+                  <td className="px-6 py-4">
+                    <div className="font-semibold text-slate-900">
+                      {ent.name || ent.code}
+                    </div>
+                  </td>
+
+                  {/* Required Bank Statements */}
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {(ent.banks && ent.banks.length > 0) ? (
+                        ent.banks.map((b) => (
+                          <span
+                            key={b}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-mono font-semibold bg-slate-100 text-slate-800 border border-slate-200/90 shadow-2xs"
+                          >
+                            <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                            {b}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-slate-400 italic">None configured</span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => openEditEnterpriseModal(ent)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                        title={`Edit ${ent.code}`}
+                        aria-label={`Edit ${ent.code}`}
                       >
-                        <Check className="w-3 h-3 text-emerald-600" />
-                        {b}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEnterprise(ent.code)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title={`Delete ${ent.code}`}
+                        aria-label={`Delete ${ent.code}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
+              {filteredEnterprises.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center py-12 text-slate-400 text-sm">
+                    No enterprise configurations match your search. Click "Add Enterprise" to create one.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {filteredEnterprises.length === 0 && (
-          <div className="text-center py-8 text-slate-400 text-sm">
-            No enterprise mappings match your search. Click "Add Enterprise Banks" to create one.
-          </div>
-        )}
+        {/* Table Footer Summary */}
+        <div className="px-6 py-3.5 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
+          <span>Total Records: {filteredEnterprises.length}</span>
+          <span>Single Source of Truth: PostgreSQL</span>
+        </div>
       </div>
 
       {/* MODAL: Add / Edit Enterprise Bank Requirements (Modern UI) */}
