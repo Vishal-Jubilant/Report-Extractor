@@ -87,6 +87,27 @@ class EnterpriseListResponse(BaseModel):
     supported_banks: List[str]
 
 
+class GroupEnterpriseItem(BaseModel):
+    name: str
+    code: Optional[str] = None
+    banks: List[str]
+
+
+class GroupRequestModel(BaseModel):
+    group_name: str
+    enterprises: List[GroupEnterpriseItem]
+
+
+class GroupResponseItem(BaseModel):
+    group_name: str
+    enterprises: List[Dict[str, Any]]
+
+
+class GroupListResponse(BaseModel):
+    groups: List[GroupResponseItem]
+    supported_banks: List[str]
+
+
 class EnterpriseActionResponse(BaseModel):
     message: str
     enterprise: Optional[Dict[str, Any]] = None
@@ -455,6 +476,73 @@ def get_enterprises():
         "enterprises": list(eb_data.values()),
         "supported_banks": list(bank_layouts.BANK_LAYOUTS.keys()),
     }
+
+
+@app.get("/api/groups", response_model=GroupListResponse)
+def get_groups():
+    _reload_config()
+    groups_data = enterprise_banks.load_groups()
+    return {
+        "groups": groups_data,
+        "supported_banks": list(bank_layouts.BANK_LAYOUTS.keys()),
+    }
+
+
+@app.post("/api/groups", response_model=SimpleMessageResponse)
+def create_group(data: GroupRequestModel):
+    _reload_config()
+    grp_name = data.group_name.strip().upper()
+    if not grp_name:
+        raise HTTPException(status_code=400, detail="Group Name is required")
+    if not data.enterprises:
+        raise HTTPException(status_code=400, detail="At least one enterprise must be added under the group")
+
+    for ent in data.enterprises:
+        if not ent.name.strip():
+            raise HTTPException(status_code=400, detail="Enterprise Name cannot be empty")
+        if not ent.banks:
+            raise HTTPException(status_code=400, detail=f"Please select at least one bank statement for enterprise '{ent.name}'")
+
+    enterprise_banks.save_group(
+        group_name=grp_name,
+        enterprises_list=[item.model_dump() for item in data.enterprises]
+    )
+    _reload_config()
+    return {"message": f"Group '{grp_name}' saved successfully"}
+
+
+@app.put("/api/groups/{group_name}", response_model=SimpleMessageResponse)
+def update_group(group_name: str, data: GroupRequestModel):
+    _reload_config()
+    new_grp = data.group_name.strip().upper()
+    if not new_grp:
+        raise HTTPException(status_code=400, detail="Group Name is required")
+    if not data.enterprises:
+        raise HTTPException(status_code=400, detail="At least one enterprise must be added under the group")
+
+    for ent in data.enterprises:
+        if not ent.name.strip():
+            raise HTTPException(status_code=400, detail="Enterprise Name cannot be empty")
+        if not ent.banks:
+            raise HTTPException(status_code=400, detail=f"Please select at least one bank statement for enterprise '{ent.name}'")
+
+    enterprise_banks.save_group(
+        group_name=new_grp,
+        enterprises_list=[item.model_dump() for item in data.enterprises],
+        old_group_name=group_name.strip().upper()
+    )
+    _reload_config()
+    return {"message": f"Group '{new_grp}' updated successfully"}
+
+
+@app.delete("/api/groups/{group_name}", response_model=SimpleMessageResponse)
+def delete_group(group_name: str):
+    _reload_config()
+    deleted = enterprise_banks.delete_group(group_name)
+    if deleted:
+        _reload_config()
+        return {"message": f"Group '{group_name}' deleted successfully"}
+    raise HTTPException(status_code=404, detail=f"Group '{group_name}' not found")
 
 
 @app.post("/api/enterprises", response_model=EnterpriseActionResponse)

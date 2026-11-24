@@ -36,6 +36,7 @@ class Enterprise(Base):
     __tablename__ = "enterprises"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    group_name: Mapped[str] = mapped_column(String(100), nullable=True, default="", index=True)
     # unique=True creates a UNIQUE b-tree index automatically in PostgreSQL. Redundant index=True omitted.
     code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
