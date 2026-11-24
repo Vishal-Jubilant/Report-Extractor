@@ -1,81 +1,118 @@
-import json
-import os
-import threading
-
-CONFIG_DIR = os.path.dirname(os.path.abspath(__file__))
-JSON_FILE = os.path.join(CONFIG_DIR, "enterprise_banks.json")
-
-_lock = threading.Lock()
-
-DEFAULT_ENTERPRISE_BANKS = {
-    "JC": {
-        "code": "JC",
-        "name": "JC ENTERPRISE",
-        "banks": ["KOTAK", "IDFC"],
-    },
-    "ACE": {
-        "code": "ACE",
-        "name": "ACE ENTERPRISES",
-        "banks": ["IDBI"],
-    },
-    "RE": {
-        "code": "RE",
-        "name": "ROHIT ENTERPRISES",
-        "banks": ["ICICI", "AXIS"],
-    },
-    "SS": {
-        "code": "SS",
-        "name": "SUDHAKAR S",
-        "banks": ["ICICI"],
-    },
-    "SN": {
-        "code": "SN",
-        "name": "NIRMALA S",
-        "banks": ["ICICI"],
-    },
-    "ASQ": {
-        "code": "ASQ",
-        "name": "A SQUARE ENTERPRISES",
-        "banks": ["KOTAK", "IDBI"],
-    },
-}
+"""
+Enterprise bank statement requirements mapping.
+PostgreSQL-backed single source of truth using SQLAlchemy 2.0 and Psycopg 3.
+Reads and writes directly to PostgreSQL tables 'enterprises' and 'enterprise_banks'.
+"""
+from typing import List, Optional
+from backend.database import get_worker_session
+from backend.database.models import Enterprise, EnterpriseBank
 
 
 def load_enterprise_banks() -> dict:
-    if not os.path.exists(JSON_FILE):
-        save_enterprise_banks(DEFAULT_ENTERPRISE_BANKS)
-        return DEFAULT_ENTERPRISE_BANKS
-
+    """Fetch all enterprises and their required banks directly from PostgreSQL."""
     try:
-        with open(JSON_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            return data if isinstance(data, dict) else DEFAULT_ENTERPRISE_BANKS
-    except Exception:
-        return DEFAULT_ENTERPRISE_BANKS
+        with get_worker_session() as session:
+            ents = session.query(Enterprise).order_by(Enterprise.id).all()
+            return {
+                e.code: {
+                    "code": e.code,
+                    "name": e.name,
+                    "banks": [b.bank_name for b in e.banks],
+                }
+                for e in ents
+            }
+    except Exception as e:
+        print(f"[ERROR] Failed to load enterprises from PostgreSQL: {e}")
+        return {}
 
 
 def save_enterprise_banks(data: dict) -> None:
-    with _lock:
-        temp_file = JSON_FILE + ".tmp"
-        with open(temp_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        os.replace(temp_file, JSON_FILE)
+    """
+    Persist enterprise bank requirements into PostgreSQL inside an atomic transaction.
+    """
+    with get_worker_session() as session:
+        for ent_key, ent_obj in data.items():
+            code = (ent_obj.get("code") or ent_key).strip().upper()
+            name = (ent_obj.get("name") or code).strip().upper()
+            banks = [b.strip().upper() for b in ent_obj.get("banks", []) if b.strip()]
+
+            ent = session.query(Enterprise).filter_by(code=code).first()
+            if ent:
+                ent.name = name
+                # Replace banks
+                session.query(EnterpriseBank).filter_by(enterprise_id=ent.id).delete()
+            else:
+                ent = Enterprise(code=code, name=name)
+                session.add(ent)
+                session.flush()
+
+            for b in banks:
+                session.add(EnterpriseBank(enterprise_id=ent.id, bank_name=b))
+
+        session.commit()
+
+
+def create_or_update_enterprise(code: str, name: str, banks: List[str]) -> dict:
+    """Create or update an enterprise and its required bank statements in PostgreSQL."""
+    code_val = code.strip().upper()
+    name_val = name.strip().upper() or code_val
+    clean_banks = [b.strip().upper() for b in banks if b.strip()]
+
+    with get_worker_session() as session:
+        ent = session.query(Enterprise).filter_by(code=code_val).first()
+        if ent:
+            ent.name = name_val
+            session.query(EnterpriseBank).filter_by(enterprise_id=ent.id).delete()
+        else:
+            ent = Enterprise(code=code_val, name=name_val)
+            session.add(ent)
+            session.flush()
+
+        for b in clean_banks:
+            session.add(EnterpriseBank(enterprise_id=ent.id, bank_name=b))
+
+        session.commit()
+
+        return {
+            "code": ent.code,
+            "name": ent.name,
+            "banks": clean_banks,
+        }
+
+
+def delete_enterprise(code: str) -> bool:
+    """Delete an enterprise by code from PostgreSQL (cascades to enterprise_banks)."""
+    code_val = code.strip().upper()
+    with get_worker_session() as session:
+        ent = session.query(Enterprise).filter_by(code=code_val).first()
+        if not ent:
+            return False
+
+        session.delete(ent)
+        session.commit()
+        return True
 
 
 def get_enterprise_banks(code_or_name: str) -> list:
-    """Find expected banks by code or name (case-insensitive)."""
+    """Find expected banks by code or name (case-insensitive) directly from PostgreSQL."""
     key = (code_or_name or "").strip().upper()
-    data = load_enterprise_banks()
+    if not key:
+        return []
 
-    if key in data:
-        return data[key].get("banks", [])
+    with get_worker_session() as session:
+        # Match by code
+        ent = session.query(Enterprise).filter_by(code=key).first()
+        if ent:
+            return [b.bank_name for b in ent.banks]
 
-    for k, v in data.items():
-        if k.upper() == key:
-            return v.get("banks", [])
-        if v.get("name", "").strip().upper() == key:
-            return v.get("banks", [])
-        if key in v.get("name", "").strip().upper():
-            return v.get("banks", [])
+        # Match by exact name
+        ent = session.query(Enterprise).filter_by(name=key).first()
+        if ent:
+            return [b.bank_name for b in ent.banks]
+
+        # Match by name containment
+        for e in session.query(Enterprise).all():
+            if key in e.name.upper():
+                return [b.bank_name for b in e.banks]
 
     return []

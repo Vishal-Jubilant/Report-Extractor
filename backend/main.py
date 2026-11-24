@@ -468,15 +468,9 @@ def create_or_update_enterprise(data: EnterpriseModel):
     if not banks:
         raise HTTPException(status_code=400, detail="At least one bank must be selected")
 
-    eb_data = enterprise_banks.load_enterprise_banks()
-    eb_data[code] = {
-        "code": code,
-        "name": name,
-        "banks": banks,
-    }
-    enterprise_banks.save_enterprise_banks(eb_data)
+    saved_ent = enterprise_banks.create_or_update_enterprise(code, name, banks)
     _reload_config()
-    return {"message": f"Enterprise '{code}' saved successfully", "enterprise": eb_data[code]}
+    return {"message": f"Enterprise '{code}' saved successfully", "enterprise": saved_ent}
 
 
 @app.put("/api/enterprises/{code}", response_model=EnterpriseActionResponse)
@@ -492,24 +486,17 @@ def update_enterprise(code: str, data: EnterpriseUpdateModel):
     if not banks:
         raise HTTPException(status_code=400, detail="At least one bank must be selected")
 
-    eb_data[code_key] = {
-        "code": code_key,
-        "name": name,
-        "banks": banks,
-    }
-    enterprise_banks.save_enterprise_banks(eb_data)
+    updated_ent = enterprise_banks.create_or_update_enterprise(code_key, name, banks)
     _reload_config()
-    return {"message": f"Enterprise '{code_key}' updated successfully", "enterprise": eb_data[code_key]}
+    return {"message": f"Enterprise '{code_key}' updated successfully", "enterprise": updated_ent}
 
 
 @app.delete("/api/enterprises/{code}", response_model=SimpleMessageResponse)
 def delete_enterprise(code: str):
     _reload_config()
     code_key = code.strip().upper()
-    eb_data = enterprise_banks.load_enterprise_banks()
-    if code_key in eb_data:
-        del eb_data[code_key]
-        enterprise_banks.save_enterprise_banks(eb_data)
+    deleted = enterprise_banks.delete_enterprise(code_key)
+    if deleted:
         _reload_config()
         return {"message": f"Enterprise '{code_key}' deleted successfully"}
     raise HTTPException(status_code=404, detail=f"Enterprise '{code_key}' not found")
@@ -517,7 +504,7 @@ def delete_enterprise(code: str):
 
 @app.post("/api/settings/account-code", response_model=SimpleMessageResponse)
 def add_account_code(data: AccountCodeRequest):
-    """Safely adds or updates an account holder mapping using thread-safe JSON storage."""
+    """Safely adds or updates an account holder mapping directly in PostgreSQL."""
     _reload_config()
     holder = data.holder_name.strip().upper()
     code = data.account_code.strip().upper()
