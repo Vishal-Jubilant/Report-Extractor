@@ -7,7 +7,7 @@ import time
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 VENV_DIR = os.path.join(BASE_DIR, ".venv")
-ENV_FILE = os.path.join(BASE_DIR, ".env")
+ENV_FILE = os.path.join(BASE_DIR, "backend", ".env")
 
 if os.name == "nt":
     VENV_PYTHON = os.path.join(VENV_DIR, "Scripts", "python.exe")
@@ -91,7 +91,7 @@ def step1_setup_and_activate_venv():
     else:
         print("  [OK] Virtual environment found at .venv.")
 
-    req_file = os.path.join(BASE_DIR, "requirements.txt")
+    req_file = os.path.join(BASE_DIR, "backend", "requirements.txt")
     missing = _missing_packages(VENV_PYTHON)
     if os.path.exists(req_file) and (created_now or missing):
         if missing:

@@ -8,9 +8,9 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# Locate and load .env file from project root
+# Locate and load .env file from backend/
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
-ENV_PATH = ROOT_DIR / ".env"
+ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 if ENV_PATH.exists():
     load_dotenv(dotenv_path=ENV_PATH)
 else:
