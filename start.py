@@ -1,8 +1,25 @@
 import importlib.util
 import os
+import socket
 import subprocess
 import sys
 import time
+
+
+def _get_local_ip() -> str:
+    """Return the machine's LAN IP (e.g. 192.168.x.x). Falls back to 127.0.0.1."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(1)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
+LOCAL_IP = _get_local_ip()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
@@ -35,7 +52,8 @@ REQUIRED_MODULES = [
 def banner():
     print("=" * 68)
     print("      RTGS TransactFlow - Automated Startup & Preflight Check")
-    print("         Backend: FastAPI (:4501) | Frontend: React + Vite (:4500)")
+    print(f"         Backend: FastAPI (:{4501}) | Frontend: React + Vite (:{4500})")
+    print(f"         Local IP: {LOCAL_IP}")
     print("=" * 68)
 
 
@@ -335,14 +353,14 @@ def step5_start_servers():
     except Exception as exc:
         print(f"  [WARN] Notice on npm setup: {exc}")
 
-    print("  -> Starting FastAPI Backend on http://127.0.0.1:4501...")
+    print(f"  -> Starting FastAPI Backend on http://{LOCAL_IP}:4501 (also 127.0.0.1:4501)...")
     backend_cmd = [
         sys.executable,
         "-m",
         "uvicorn",
         "backend.main:app",
         "--host",
-        "127.0.0.1",
+        "0.0.0.0",
         "--port",
         "4501",
         "--reload",
@@ -367,7 +385,13 @@ def step5_start_servers():
             print(".", end="", flush=True)
     print(" OK" if backend_ready else " (timeout, starting frontend anyway)")
 
-    print("  -> Starting React + Tailwind UI on http://localhost:4500...")
+    print(f"  -> Starting React + Tailwind UI on http://{LOCAL_IP}:4500...")
+    # Write the backend IP into frontend/.env.local so Vite proxy knows where to forward
+    env_local_path = os.path.join(FRONTEND_DIR, ".env.local")
+    with open(env_local_path, "w") as f:
+        f.write(f"VITE_BACKEND_HOST={LOCAL_IP}\n")
+        f.write(f"VITE_BACKEND_PORT=4501\n")
+        f.write(f"VITE_FRONTEND_PORT=4500\n")
     frontend_cmd = f"{NPM_CMD} run dev"
     frontend_process = subprocess.Popen(
         frontend_cmd,
@@ -378,8 +402,8 @@ def step5_start_servers():
 
     print("\n" + "-" * 68)
     print("  App is running!")
-    print("  Frontend UI:  http://localhost:4500")
-    print("  Backend API:  http://127.0.0.1:4501/docs")
+    print(f"  Frontend UI:  http://{LOCAL_IP}:4500  (also http://localhost:4500)")
+    print(f"  Backend API:  http://{LOCAL_IP}:4501/docs  (also http://127.0.0.1:4501/docs)")
     print("  Press Ctrl+C in this terminal to stop both servers.")
     print("-" * 68 + "\n")
 

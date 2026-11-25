@@ -1,6 +1,7 @@
 import asyncio
 import io
 import os
+import socket
 import sys
 import tempfile
 from typing import Any, Dict, List, Optional, Tuple
@@ -29,9 +30,24 @@ from backend.core.extractor import (
 )
 from backend.core.formatting import indian_format, to_float
 
+def _get_local_ip() -> str:
+    """Return the machine's LAN IP. Falls back to 127.0.0.1."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(1)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
+LOCAL_IP = _get_local_ip()
+
 app = FastAPI(title="RTGS Bank Statement Extractor API", version="2.1.0")
 
-# Security: Specific local origins + regex for local development ports, avoiding wildcard credentials bug
+# Security: Specific local origins + LAN IP + regex for any local dev port
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -39,8 +55,10 @@ app.add_middleware(
         "http://127.0.0.1:4500",
         "http://localhost:4501",
         "http://127.0.0.1:4501",
+        f"http://{LOCAL_IP}:4500",
+        f"http://{LOCAL_IP}:4501",
     ],
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
