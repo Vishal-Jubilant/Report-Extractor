@@ -16,18 +16,18 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from config import account_codes, accounts, bank_layouts, enterprise_banks, name_mappings, regex_patterns
-from config.pdf_generator import create_zip_archive, get_collection_zip_filename, process_excel_to_pdfs
+from backend.config import account_codes, accounts, bank_layouts, enterprise_banks, name_mappings, regex_patterns
+from backend.config.pdf_generator import create_zip_archive, get_collection_zip_filename, process_excel_to_pdfs
 from backend.database import get_worker_session
 from backend.database.models import Bank, Enterprise, AccountCode
-from core.extractor import (
+from backend.core.extractor import (
     account_sort_key,
     detect_bank,
     extract_transactions,
     identify_account,
     _reload_config,
 )
-from core.formatting import indian_format, to_float
+from backend.core.formatting import indian_format, to_float
 
 app = FastAPI(title="RTGS Bank Statement Extractor API", version="2.1.0")
 

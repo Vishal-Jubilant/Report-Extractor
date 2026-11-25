@@ -11,7 +11,7 @@ Rules:  K = multiple of 1,000 (below 1 lakh)
         C = multiple of 1,00,000 (1 crore and above)             -> max 2 decimals
         Paise (e.g. 14,108.05) or anything else -> full Indian format
 """
-from core.formatting import indian_format, to_float
+from backend.core.formatting import indian_format, to_float
 
 K, L, C = 1_000, 1_00_000, 1_00_00_000
 

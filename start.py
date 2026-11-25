@@ -273,7 +273,7 @@ def step4_validate_and_migrate_schema():
 
     mig_res = subprocess.run(
         [sys.executable, "-m", "alembic", "upgrade", "head"],
-        cwd=BASE_DIR,
+        cwd=os.path.join(BASE_DIR, "backend"),
         capture_output=True,
         text=True,
     )

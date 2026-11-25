@@ -3,10 +3,10 @@ import os
 import re
 import pdfplumber
 
-from config import account_codes, accounts, bank_layouts, enterprise_banks, name_mappings, regex_patterns
-from core.amount_format import short_amount
-from core import tabular
-from core.holder import account_code_for, detect_holder, strip_holder
+from backend.config import account_codes, accounts, bank_layouts, enterprise_banks, name_mappings, regex_patterns
+from backend.core.amount_format import short_amount
+from backend.core import tabular
+from backend.core.holder import account_code_for, detect_holder, strip_holder
 
 
 def _reload_config():

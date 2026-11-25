@@ -8,7 +8,7 @@ Account-holder name handling.
 """
 import re
 
-from config import account_codes, accounts
+from backend.config import account_codes, accounts
 
 
 def _norm(text: str) -> str:
