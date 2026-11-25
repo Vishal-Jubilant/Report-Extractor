@@ -92,3 +92,16 @@ class Bank(Base):
 
     def __repr__(self) -> str:
         return f"<Bank(id={self.id}, name='{self.name}')>"
+
+
+class Group(Base):
+    __tablename__ = "groups"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<Group(id={self.id}, name='{self.name}')>"

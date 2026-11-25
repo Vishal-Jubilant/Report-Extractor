@@ -26,56 +26,74 @@ export default function ExtractorDropzone({
 }) {
   return (
     <div className="space-y-4">
-      {/* Upload Dropzone */}
-      <div 
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-        onClick={onBrowseClick}
-        className={`relative flex flex-col items-center justify-center min-h-[250px] py-12 px-8 rounded-2xl border-2 border-dashed transition-all duration-150 cursor-pointer backdrop-blur-xl shadow-sm ${
-          isDragging 
-            ? 'border-slate-900 bg-white/90 scale-[0.995] shadow-md' 
-            : 'border-slate-300/80 bg-white/60 hover:border-slate-800 hover:bg-white/80 hover:shadow-md'
-        }`}
-      >
-        <input 
-          ref={fileInputRef}
-          type="file" 
-          multiple 
-          accept=".pdf,.csv,.xlsx,.xls" 
-          onChange={onFileChange} 
-          className="hidden" 
-        />
+      {/* Modern Upload Dropzone Card */}
+      <div className="rounded-3xl bg-white border border-slate-200/90 shadow-sm p-2.5">
+        <div 
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={onDrop}
+          onClick={onBrowseClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onBrowseClick();
+            }
+          }}
+          className={`group relative overflow-hidden flex flex-col items-center justify-center min-h-[250px] py-12 px-8 rounded-2xl border border-dashed transition-all duration-200 cursor-pointer ${
+            isDragging 
+              ? 'border-indigo-500 bg-indigo-50/40 ring-4 ring-indigo-500/10 scale-[0.995]' 
+              : 'border-slate-300/90 bg-slate-50/40 hover:bg-slate-50/80 hover:border-slate-400'
+          }`}
+        >
+          {/* Subtle Architectural Dot Pattern */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-45 [background-image:radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:18px_18px] [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_80%)]"
+          />
 
-        <div className="p-3.5 rounded-2xl glass-card text-slate-800 mb-3.5">
-          <UploadCloud className="w-8 h-8" />
-        </div>
+          <input 
+            ref={fileInputRef}
+            type="file" 
+            multiple 
+            accept=".pdf,.csv,.xlsx,.xls" 
+            onChange={onFileChange} 
+            className="hidden" 
+          />
 
-        <p className="text-base sm:text-lg font-semibold text-slate-900 tracking-tight">
-          Drop bank statements here, or <span className="text-slate-900 underline underline-offset-4 font-bold">browse files</span>
-        </p>
-        <p className="text-xs text-slate-500 mt-1.5">
-          Compatible with ICICI, Kotak, Axis, IDBI, and IDFC statements
-        </p>
+          {/* Modern Icon Badge */}
+          <div className="relative z-10 mb-4">
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 shadow-md ${
+              isDragging
+                ? 'bg-indigo-600 text-white shadow-indigo-500/25 scale-105'
+                : 'bg-slate-900 text-white shadow-slate-900/15 group-hover:-translate-y-0.5 group-hover:shadow-lg'
+            }`}>
+              <UploadCloud className="w-6 h-6" />
+            </div>
+          </div>
 
-        <div className="flex items-center gap-2 mt-4">
-          {['.PDF', '.CSV', '.XLSX', '.XLS'].map((format) => (
-            <span 
-              key={format}
-              className="px-2.5 py-0.5 rounded-md text-xs font-mono font-semibold bg-white/75 backdrop-blur-md border border-slate-200/80 text-slate-700 shadow-2xs"
-            >
-              {format}
+          <h2 className="relative z-10 text-base sm:text-lg font-bold text-slate-900 tracking-tight text-center">
+            {isDragging ? 'Drop your bank statements here' : 'Upload Bank Statements'}
+          </h2>
+          <p className="relative z-10 text-xs sm:text-sm text-slate-500 mt-1 text-center max-w-md">
+            Drag and drop your bank statements here, or select files from your computer
+          </p>
+
+          <div className="relative z-10 flex items-center justify-center mt-5">
+            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-sm group-hover:border-slate-300 group-hover:shadow transition-all">
+              Browse Statement Files
             </span>
-          ))}
+          </div>
         </div>
       </div>
 
       {/* Uploaded Files Section & Proceed Button */}
       {files.length > 0 && (
-        <div className="p-6 rounded-2xl glass-panel space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60">
+        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
-              <span className="px-2.5 py-0.5 rounded-lg bg-slate-900/5 text-slate-900 border border-slate-200/70 font-bold text-xs font-mono">
+              <span className="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-900 font-bold text-xs font-mono">
                 {files.length}
               </span>
               <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
@@ -109,10 +127,10 @@ export default function ExtractorDropzone({
               return (
                 <div 
                   key={idx}
-                  className="flex items-center justify-between p-3.5 rounded-xl glass-card group"
+                  className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-white transition-all group"
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <div className="p-2 rounded-lg bg-white/80 border border-slate-200/80 text-slate-700 shrink-0 shadow-2xs">
+                    <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-700 shrink-0">
                       {isPdf ? (
                         <FileText className="w-4 h-4" />
                       ) : (

@@ -2,14 +2,20 @@ import React from 'react';
 import { 
   SlidersHorizontal, 
   Layers, 
+  FileSpreadsheet,
   ArrowLeftRight
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab }) {
   const menuItems = [
     {
+      id: 'collection-report',
+      label: 'Collection Report',
+      icon: FileSpreadsheet,
+    },
+    {
       id: 'extractor',
-      label: 'Extractor',
+      label: 'Daily Payment Report',
       icon: Layers,
     },
     {

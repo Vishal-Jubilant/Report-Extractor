@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { 
-  FileSpreadsheet, 
   Copy, 
-  Check, 
-  Download 
+  Check 
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import ExtractorDropzone from './extractor/ExtractorDropzone';
@@ -197,50 +195,6 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
     }, 2000);
   };
 
-  // Download Helpers
-  const downloadText = (filename, content) => {
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const downloadCSV = () => {
-    if (!results) return;
-    const allRows = [
-      ...results.send.transactions,
-      ...results.received.transactions
-    ];
-    if (allRows.length === 0) return;
-
-    const headers = ["Account", "Bank", "Name", "Raw Name", "Amount", "Short", "Type", "Status", "File"];
-    const csvContent = [
-      headers.join(","),
-      ...allRows.map(r => [
-        `"${r.account}"`,
-        `"${r.bank}"`,
-        `"${(r.name || '').replace(/"/g, '""')}"`,
-        `"${(r.raw_name || '').replace(/"/g, '""')}"`,
-        `"${r.amount}"`,
-        `"${r.short}"`,
-        `"${r.type}"`,
-        `"${r.status}"`,
-        `"${r.file}"`
-      ].join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = "transactions.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   // Optimized Memoized Transaction Filtering
   const sendSearchLower = sendSearch.trim().toLowerCase();
   const filteredSend = useMemo(() => {
@@ -270,13 +224,13 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
     <div className="flex-1 p-8 space-y-6 w-full h-full overflow-y-auto">
       
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/70">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Statement Extractor
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Parse ICICI, Kotak, Axis, IDBI &amp; IDFC statements. Automatically identifies holder name and maps to account codes.
+            Parse bank statements. Automatically identifies holder name and maps to account codes.
           </p>
         </div>
 
@@ -285,26 +239,10 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
             <button
               type="button"
               onClick={() => copyToClipboard(results.combined_text, 'combined', 'Combined List')}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold glass-card text-slate-700 hover:text-slate-900 cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all shadow-sm cursor-pointer"
             >
               {copiedSection === 'combined' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
               Copy All Text
-            </button>
-            <button
-              type="button"
-              onClick={() => downloadText('send_received.txt', results.combined_text)}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold glass-card text-slate-700 hover:text-slate-900 cursor-pointer"
-            >
-              <Download className="w-4 h-4 text-slate-500" />
-              .TXT
-            </button>
-            <button
-              type="button"
-              onClick={downloadCSV}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold glass-card text-slate-700 hover:text-slate-900 cursor-pointer"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-slate-500" />
-              .CSV
             </button>
           </div>
         )}

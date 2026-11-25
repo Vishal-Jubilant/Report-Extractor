@@ -45,7 +45,7 @@ export function ToastProvider({ children }) {
         <div 
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl glass-modal animate-in fade-in slide-in-from-bottom-2 duration-150"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-slate-200 shadow-lg shadow-slate-200/50 animate-in fade-in slide-in-from-bottom-2 duration-150"
         >
           {renderToastIcon(toast.type)}
           <span className="text-xs font-medium text-slate-800">{toast.message}</span>

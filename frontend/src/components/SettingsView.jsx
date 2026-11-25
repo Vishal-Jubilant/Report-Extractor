@@ -41,6 +41,7 @@ export default function SettingsView({ onNotify }) {
   const [showAddEnterpriseModal, setShowAddEnterpriseModal] = useState(false);
   const [newEntCode, setNewEntCode] = useState('');
   const [newEntName, setNewEntName] = useState('');
+  const [entFormError, setEntFormError] = useState('');
 
   // 3. Add Bank Quick Modal State
   const [showAddBankModal, setShowAddBankModal] = useState(false);
@@ -303,11 +304,20 @@ export default function SettingsView({ onNotify }) {
   const handleQuickAddEnterprise = async (e) => {
     e.preventDefault();
     const code = newEntCode.trim().toUpperCase();
-    const name = (newEntName.trim() || code).toUpperCase();
-    if (!code) {
-      notifyFn('Enterprise Code is required', 'warning');
+    const name = newEntName.trim().toUpperCase();
+    if (!code && !name) {
+      setEntFormError('Both Enterprise Code and Full Name are required.');
       return;
     }
+    if (!code) {
+      setEntFormError('Enterprise Code is required.');
+      return;
+    }
+    if (!name) {
+      setEntFormError('Enterprise Full Name / Holder Name is required.');
+      return;
+    }
+    setEntFormError('');
 
     try {
       setIsSubmitting(true);
@@ -322,6 +332,7 @@ export default function SettingsView({ onNotify }) {
       notifyFn(`Enterprise "${code}" added successfully!`, 'success');
       setNewEntCode('');
       setNewEntName('');
+      setEntFormError('');
       fetchAvailableEnterprises();
     } catch (err) {
       notifyFn(err.message || 'Error adding enterprise', 'error');
@@ -429,7 +440,7 @@ export default function SettingsView({ onNotify }) {
     <div className="flex-1 p-8 space-y-7 w-full h-full overflow-y-auto">
       
       {/* Settings Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/70">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             System Configuration
@@ -441,11 +452,11 @@ export default function SettingsView({ onNotify }) {
       </div>
 
       {/* Unified Enterprise Table */}
-      <div className="rounded-2xl glass-panel overflow-hidden">
+      <div className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs overflow-hidden">
         {/* Table Toolbar */}
-        <div className="p-6 border-b border-slate-200/60 bg-white/40 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900/95 text-white flex items-center justify-center shrink-0 shadow-md shadow-slate-900/15">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
               <Building2 className="w-5 h-5 text-white" aria-hidden="true" />
             </div>
             <div>
@@ -469,7 +480,7 @@ export default function SettingsView({ onNotify }) {
                 value={enterpriseSearch}
                 onChange={(e) => setEnterpriseSearch(e.target.value)}
                 placeholder="Search group, enterprise, bank..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl glass-input text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white/95 focus:ring-1 focus:ring-slate-900 transition-all"
+                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white focus:ring-1 focus:ring-slate-900 transition-all shadow-2xs"
               />
             </div>
 
@@ -477,7 +488,7 @@ export default function SettingsView({ onNotify }) {
             <button
               type="button"
               onClick={openAddGroupModal}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900/95 text-white hover:bg-slate-800 transition-all shadow-sm cursor-pointer active:scale-[0.98] shrink-0"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-[0.98] shrink-0"
               title="Add a new group with multiple enterprises and banks"
             >
               <Plus className="w-4 h-4" />
@@ -488,7 +499,7 @@ export default function SettingsView({ onNotify }) {
             <button
               type="button"
               onClick={() => setShowAddEnterpriseModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold glass-card text-slate-700 hover:text-slate-900 cursor-pointer active:scale-[0.98] shrink-0"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-[0.98] shrink-0"
               title="Add a new enterprise entity to the system"
             >
               <Plus className="w-4 h-4 text-slate-500" />
@@ -499,7 +510,7 @@ export default function SettingsView({ onNotify }) {
             <button
               type="button"
               onClick={() => setShowAddBankModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold glass-card text-slate-700 hover:text-slate-900 cursor-pointer active:scale-[0.98] shrink-0"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-[0.98] shrink-0"
               title="Add a new bank statement requirement option"
             >
               <Plus className="w-4 h-4 text-slate-500" />
@@ -512,7 +523,7 @@ export default function SettingsView({ onNotify }) {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-white/50 backdrop-blur-sm border-b border-slate-200/70 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 <th scope="col" className="px-6 py-3.5 w-16 text-center">
                   S.No
                 </th>
@@ -530,11 +541,11 @@ export default function SettingsView({ onNotify }) {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100/80 text-sm">
+            <tbody className="divide-y divide-slate-100 text-sm">
               {filteredGroups.map((grp, idx) => (
                 <tr 
                   key={grp.group_name}
-                  className="hover:bg-white/75 transition-colors group align-top"
+                  className="hover:bg-slate-50/70 transition-colors group align-top"
                 >
                   {/* S.No */}
                   <td className="px-6 py-4 text-center font-mono text-xs font-semibold text-slate-400 tabular-nums">
@@ -624,7 +635,7 @@ export default function SettingsView({ onNotify }) {
         </div>
 
         {/* Table Footer Summary */}
-        <div className="px-6 py-3.5 bg-white/45 backdrop-blur-md border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-500 font-mono">
+        <div className="px-6 py-3.5 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-mono">
           <span>Total Groups: {filteredGroups.length}</span>
         </div>
       </div>
@@ -632,7 +643,7 @@ export default function SettingsView({ onNotify }) {
       {/* 1. MODAL: Add / Edit Group & Enterprise Bank Requirements */}
       {showGroupModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/35 backdrop-blur-md transition-opacity animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
           role="dialog"
           aria-modal="true"
           aria-labelledby="group-modal-title"
@@ -641,11 +652,11 @@ export default function SettingsView({ onNotify }) {
           }}
         >
           <div 
-            className="relative w-full max-w-2xl glass-modal rounded-2xl overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-200/60 shrink-0">
+            <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-100 shrink-0">
               <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
                 <Building2 className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
@@ -715,7 +726,7 @@ export default function SettingsView({ onNotify }) {
                     return (
                       <div 
                         key={ent.id || idx} 
-                        className="p-4 sm:p-5 rounded-2xl glass-card space-y-4"
+                        className="p-4 sm:p-5 rounded-2xl bg-slate-50/80 border border-slate-200/90 shadow-2xs space-y-4 transition-all"
                       >
                         {/* Enterprise Card Header */}
                         <div className="flex items-center justify-between pb-3 border-b border-slate-200/70">
@@ -969,7 +980,7 @@ export default function SettingsView({ onNotify }) {
               </div>
 
               {/* Modal Actions Footer */}
-              <div className="px-6 py-4 bg-white/50 backdrop-blur-md border-t border-slate-200/60 flex items-center justify-end gap-2.5 shrink-0 z-10">
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200/80 flex items-center justify-end gap-2.5 shrink-0 z-10">
                 <button
                   type="button"
                   onClick={() => setShowGroupModal(false)}
@@ -995,7 +1006,7 @@ export default function SettingsView({ onNotify }) {
       {/* 2. MODAL: Manage & Add Enterprise */}
       {showAddEnterpriseModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/35 backdrop-blur-md transition-opacity animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-enterprise-modal-title"
@@ -1004,11 +1015,11 @@ export default function SettingsView({ onNotify }) {
           }}
         >
           <div 
-            className="relative w-full max-w-2xl glass-modal rounded-2xl overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-200/60">
+            <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-100">
               <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
                 <Building2 className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
@@ -1036,7 +1047,7 @@ export default function SettingsView({ onNotify }) {
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Registered Enterprises ({availableEnterprises.length})
                   </label>
-                  <span className="text-[11px] text-slate-400">Available in Group Dropdowns</span>
+
                 </div>
                 
                 <div className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl max-h-40 overflow-y-auto space-y-1.5">
@@ -1089,29 +1100,32 @@ export default function SettingsView({ onNotify }) {
                     type="text"
                     placeholder="e.g. SS, SN, or JC"
                     value={newEntCode}
-                    onChange={(e) => setNewEntCode(e.target.value.toUpperCase())}
-                    required
+                    onChange={(e) => { setNewEntCode(e.target.value.toUpperCase()); setEntFormError(''); }}
                     maxLength={15}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans placeholder:font-normal focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-semibold text-slate-600">Enterprise Full Name / Holder Name</span>
+                  <span className="text-[11px] font-semibold text-slate-600">Enterprise Full Name / Holder Name <span className="text-red-500">*</span></span>
                   <input
                     type="text"
                     placeholder="e.g. SUDHAKAR S or JC ENTERPRISE"
                     value={newEntName}
-                    onChange={(e) => setNewEntName(e.target.value.toUpperCase())}
+                    onChange={(e) => { setNewEntName(e.target.value.toUpperCase()); setEntFormError(''); }}
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all outline-none uppercase shadow-2xs"
                   />
                 </div>
 
-                <div className="pt-2 flex justify-end">
+                <div className="pt-2 flex items-center justify-between gap-3">
+                  {entFormError
+                    ? <p className="text-xs text-red-500 font-medium">* {entFormError}</p>
+                    : <span />
+                  }
                   <button
                     type="submit"
-                    disabled={isSubmitting || !newEntCode.trim()}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40"
+                    disabled={isSubmitting}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-all cursor-pointer active:scale-[0.98] disabled:opacity-40 shrink-0"
                   >
                     <Plus className="w-4 h-4" />
                     <span>{isSubmitting ? 'Adding...' : 'Add Enterprise'}</span>
@@ -1121,11 +1135,11 @@ export default function SettingsView({ onNotify }) {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-3.5 bg-white/50 backdrop-blur-md border-t border-slate-200/60 flex items-center justify-end">
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
               <button
                 type="button"
                 onClick={() => setShowAddEnterpriseModal(false)}
-                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold glass-card text-slate-700 hover:text-slate-900 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer shadow-2xs"
               >
                 Close
               </button>
@@ -1138,7 +1152,7 @@ export default function SettingsView({ onNotify }) {
       {/* 3. MODAL: Manage & Add Bank */}
       {showAddBankModal && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/35 backdrop-blur-md transition-opacity animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-bank-modal-title"
@@ -1147,11 +1161,11 @@ export default function SettingsView({ onNotify }) {
           }}
         >
           <div 
-            className="relative w-full max-w-2xl glass-modal rounded-2xl overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-200/60">
+            <div className="flex items-start gap-3.5 px-6 pt-6 pb-4 border-b border-slate-100">
               <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
                 <Landmark className="w-5 h-5 text-white" aria-hidden="true" />
               </div>
@@ -1179,7 +1193,7 @@ export default function SettingsView({ onNotify }) {
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Configured Banks ({supportedBanks.length})
                   </label>
-                  <span className="text-[11px] text-slate-400">Active Statement Options</span>
+
                 </div>
 
                 <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl max-h-48 overflow-y-auto flex flex-wrap gap-2">
@@ -1241,11 +1255,11 @@ export default function SettingsView({ onNotify }) {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-3.5 bg-white/50 backdrop-blur-md border-t border-slate-200/60 flex items-center justify-end">
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
               <button
                 type="button"
                 onClick={() => setShowAddBankModal(false)}
-                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold glass-card text-slate-700 hover:text-slate-900 cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer shadow-2xs"
               >
                 Close
               </button>
@@ -1258,7 +1272,7 @@ export default function SettingsView({ onNotify }) {
       {/* 4. MODAL: Custom Modern Confirmation Dialog (Replaces native browser alert/confirm) */}
       {confirmAction && createPortal(
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/35 backdrop-blur-md transition-opacity animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="confirm-modal-title"
@@ -1267,7 +1281,7 @@ export default function SettingsView({ onNotify }) {
           }}
         >
           <div 
-            className="relative w-full max-w-md glass-modal rounded-2xl overflow-hidden animate-in zoom-in-95 duration-150 p-6 space-y-4"
+            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 overflow-hidden animate-in zoom-in-95 duration-150 p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-4">

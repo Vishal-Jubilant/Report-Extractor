@@ -2,10 +2,12 @@ import asyncio
 import io
 import os
 import sys
+import tempfile
 from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -15,6 +17,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from config import account_codes, accounts, bank_layouts, enterprise_banks, name_mappings, regex_patterns
+from config.pdf_generator import create_zip_archive, get_collection_zip_filename, process_excel_to_pdfs
 from backend.database import get_worker_session
 from backend.database.models import Bank, Enterprise, AccountCode
 from core.extractor import (
@@ -784,7 +787,73 @@ async def extract_statements(
     return await asyncio.to_thread(_sync_extract, payloads)
 
 
+def _sync_generate_collection_report(filename: str, file_bytes: bytes) -> Tuple[bytes, str, int]:
+    """Generate categorized PDF reports from an Excel stream and return ZIP bytes, filename, and PDF count."""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        pdf_output_dir = os.path.join(tmp_dir, "pdfs")
+        os.makedirs(pdf_output_dir, exist_ok=True)
+
+        pdf_files = process_excel_to_pdfs(io.BytesIO(file_bytes), pdf_output_dir)
+        if not pdf_files:
+            raise ValueError("No PDF reports could be generated from the uploaded Excel file.")
+
+        zip_filename = get_collection_zip_filename()
+        zip_path = os.path.join(tmp_dir, zip_filename)
+
+        create_zip_archive(pdf_files, zip_path)
+        with open(zip_path, "rb") as zf:
+            zip_bytes = zf.read()
+
+        return zip_bytes, zip_filename, len(pdf_files)
+
+
+@app.post("/api/collection-report/generate")
+async def generate_collection_report(file: UploadFile = File(...)):
+    """
+    Accepts an Excel file (.xlsx or .xls), generates categorized Branch, Consultant,
+    and Collection Executive PDF reports, and streams back a downloadable ZIP archive.
+    """
+    filename = file.filename or "report.xlsx"
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in {".xlsx", ".xls"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file format. Please upload an Excel file (.xlsx or .xls).",
+        )
+
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded Excel file is empty.")
+
+    try:
+        zip_bytes, zip_filename, pdf_count = await asyncio.to_thread(
+            _sync_generate_collection_report, filename, file_bytes
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate collection report: {str(e)}")
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{zip_filename}"',
+            "X-Pdf-Count": str(pdf_count),
+            "Access-Control-Expose-Headers": "Content-Disposition, X-Pdf-Count",
+        },
+    )
+
+
 # Mount production React build if dist exists
 dist_dir = os.path.join(BASE_DIR, "frontend", "dist")
 if os.path.exists(dist_dir):
+    index_html = os.path.join(dist_dir, "index.html")
+
+    @app.get("/extractor", include_in_schema=False)
+    @app.get("/collection-report", include_in_schema=False)
+    @app.get("/settings", include_in_schema=False)
+    def serve_spa_routes():
+        return FileResponse(index_html)
+
     app.mount("/", StaticFiles(directory=dist_dir, html=True), name="static")

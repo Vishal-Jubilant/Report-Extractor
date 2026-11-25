@@ -5,7 +5,7 @@ Reads and writes directly to PostgreSQL tables 'enterprises' and 'enterprise_ban
 """
 from typing import List, Optional
 from backend.database import get_worker_session
-from backend.database.models import Enterprise, EnterpriseBank
+from backend.database.models import Enterprise, EnterpriseBank, Group
 
 
 def load_enterprise_banks() -> dict:
@@ -28,11 +28,21 @@ def load_enterprise_banks() -> dict:
 
 
 def load_groups() -> list:
-    """Fetch all groups with their nested enterprises."""
+    """Fetch all groups with their nested enterprises in group creation order."""
     try:
         with get_worker_session() as session:
-            ents = session.query(Enterprise).order_by(Enterprise.id).all()
+            ordered_groups = session.query(Group).order_by(Group.id.asc()).all()
+            ents = session.query(Enterprise).order_by(Enterprise.id.asc()).all()
+
             groups_dict = {}
+            for g in ordered_groups:
+                grp_name = g.name.strip().upper()
+                if grp_name:
+                    groups_dict[grp_name] = {
+                        "group_name": grp_name,
+                        "enterprises": [],
+                    }
+
             for e in ents:
                 if not e.group_name or not e.group_name.strip():
                     continue
@@ -40,14 +50,15 @@ def load_groups() -> list:
                 if grp not in groups_dict:
                     groups_dict[grp] = {
                         "group_name": grp,
-                        "enterprises": []
+                        "enterprises": [],
                     }
                 groups_dict[grp]["enterprises"].append({
                     "code": e.code,
                     "name": e.name,
                     "banks": [b.bank_name for b in e.banks],
                 })
-            return list(groups_dict.values())
+
+            return [g for g in groups_dict.values() if g["enterprises"]]
     except Exception as e:
         print(f"[ERROR] Failed to load groups from PostgreSQL: {e}")
         return []
@@ -59,6 +70,21 @@ def save_group(group_name: str, enterprises_list: List[dict], old_group_name: Op
     old_grp = (old_group_name or grp).strip().upper()
 
     with get_worker_session() as session:
+        # Preserve original group creation order on edit/rename; append new groups at the end
+        if old_group_name and old_grp != grp:
+            old_group_row = session.query(Group).filter_by(name=old_grp).first()
+            existing_new_row = session.query(Group).filter_by(name=grp).first()
+            if old_group_row and not existing_new_row:
+                old_group_row.name = grp
+            elif old_group_row and existing_new_row:
+                session.delete(old_group_row)
+            elif not existing_new_row:
+                session.add(Group(name=grp))
+        else:
+            if not session.query(Group).filter_by(name=grp).first():
+                session.add(Group(name=grp))
+        session.flush()
+
         # Find existing enterprises belonging to old_grp
         existing_ents = session.query(Enterprise).filter(
             Enterprise.group_name == old_grp
@@ -134,11 +160,14 @@ def delete_group(group_name: str) -> bool:
         ents = session.query(Enterprise).filter(
             Enterprise.group_name == grp
         ).all()
-        if not ents:
+        grp_row = session.query(Group).filter_by(name=grp).first()
+        if not ents and not grp_row:
             return False
         # Remove group association from all enterprises in this group (preserves enterprise entities)
         for e in ents:
             e.group_name = None
+        if grp_row:
+            session.delete(grp_row)
         session.commit()
         return True
 
