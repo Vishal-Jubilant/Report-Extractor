@@ -69,7 +69,7 @@ def main():
         print(f"⚠️ Notice on npm setup: {e}")
 
     # 3. Start FastAPI Backend
-    print("\n⚡ Starting FastAPI Backend on http://127.0.0.1:8000...")
+    print("\n⚡ Starting FastAPI Backend on http://127.0.0.1:4501...")
     backend_cmd = [
         py_exec,
         "-m",
@@ -78,7 +78,7 @@ def main():
         "--host",
         "127.0.0.1",
         "--port",
-        "8000",
+        "4501",
         "--reload"
     ]
     backend_process = subprocess.Popen(
@@ -88,7 +88,7 @@ def main():
     )
 
     # 4. Start React Frontend
-    print("⚡ Starting React + Tailwind UI on http://localhost:5173...")
+    print("⚡ Starting React + Tailwind UI on http://localhost:4500...")
     frontend_cmd = f"{NPM_CMD} run dev"
     frontend_process = subprocess.Popen(
         frontend_cmd,
@@ -99,15 +99,15 @@ def main():
 
     print("\n" + "-" * 65)
     print("  🌐 App is running!")
-    print("  👉 Frontend UI:  http://localhost:5173")
-    print("  👉 Backend API:  http://127.0.0.1:8000/docs")
+    print("  👉 Frontend UI:  http://localhost:4500")
+    print("  👉 Backend API:  http://127.0.0.1:4501/docs")
     print("  ⌨️  Press Ctrl+C in this terminal to stop both servers.")
     print("-" * 65 + "\n")
 
     # Give servers 2 seconds then launch browser
     time.sleep(2.5)
     try:
-        webbrowser.open("http://localhost:5173")
+        webbrowser.open("http://localhost:4500")
     except Exception:
         pass
 

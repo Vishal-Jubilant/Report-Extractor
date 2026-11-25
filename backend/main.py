@@ -32,10 +32,10 @@ app = FastAPI(title="RTGS Bank Statement Extractor API", version="2.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
+        "http://localhost:4500",
+        "http://127.0.0.1:4500",
+        "http://localhost:4501",
+        "http://127.0.0.1:4501",
     ],
     allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,

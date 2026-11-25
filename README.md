@@ -13,8 +13,8 @@ This single command automatically:
 1. Detects or creates the `.venv` virtual environment.
 2. Checks and installs all Python packages from `requirements.txt`.
 3. Verifies frontend npm packages.
-4. Starts the **FastAPI Backend** (`http://127.0.0.1:8000`).
-5. Starts the **React + Tailwind CSS UI** (`http://localhost:5173`).
+4. Starts the **FastAPI Backend** (`http://127.0.0.1:4501`).
+5. Starts the **React + Tailwind CSS UI** (`http://localhost:4500`).
 6. Automatically opens the application in your default browser.
 
 ---
