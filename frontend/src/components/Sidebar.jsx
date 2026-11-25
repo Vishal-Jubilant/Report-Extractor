@@ -22,24 +22,27 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   ];
 
   return (
-    <aside className="relative flex flex-col w-64 md:w-72 h-full bg-[#f8f9fb] p-5 border-r border-slate-200 shrink-0 select-none">
-      
+    <aside className="relative flex flex-col w-64 md:w-72 h-full bg-gradient-to-b from-[#10131a] via-[#0c0e14] to-[#090b10] p-5 border-r border-white/[0.1] shrink-0 select-none overflow-hidden">
+      {/* Subtle 3D glass glow behind sidebar */}
+      <div className="pointer-events-none absolute -top-20 -left-20 w-56 h-56 rounded-full bg-white/[0.04] blur-3xl" />
+      <div className="pointer-events-none absolute bottom-10 -right-24 w-56 h-56 rounded-full bg-indigo-500/[0.06] blur-3xl" />
+
       {/* Brand Header */}
-      <div className="flex items-center gap-3 px-2 py-2 mb-5 pb-5 border-b border-slate-200/80">
-        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900 text-white font-bold shadow-xs">
+      <div className="relative flex items-center gap-3.5 px-2 py-2.5 mb-6 pb-5 border-b border-white/[0.1]">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.1] border border-white/20 backdrop-blur-xl text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_8px_20px_rgba(0,0,0,0.4)]">
           <ArrowLeftRight className="w-4 h-4" />
         </div>
         <div>
-          <h1 className="font-bold tracking-tight text-base text-slate-900">
-            RTGS<span className="font-normal text-slate-500">FLUX</span>
+          <h1 className="font-extrabold tracking-tight text-base text-white">
+            RTGS<span className="font-light italic text-zinc-400 ml-0.5">FLUX</span>
           </h1>
-          <p className="text-xs text-slate-500 font-medium">Statement Engine</p>
+          <p className="text-[11px] text-zinc-400 font-medium tracking-wide">Statement Engine</p>
         </div>
       </div>
 
       {/* Navigation Section */}
-      <div className="space-y-1.5">
-        <p className="px-3 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+      <div className="relative space-y-2">
+        <p className="px-3 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.18em] mb-2.5">
           Workspace
         </p>
         {menuItems.map((item) => {
@@ -48,17 +51,18 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           return (
             <button
               key={item.id}
+              type="button"
               onClick={() => setActiveTab(item.id)}
-              className={`group flex items-center w-full gap-3.5 px-3.5 py-3 rounded-xl font-medium transition-all text-left cursor-pointer ${
+              className={`group flex items-center w-full gap-3.5 px-3.5 py-3 rounded-xl font-medium transition-all duration-200 text-left cursor-pointer ${
                 isActive
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+                  ? 'bg-white/[0.11] backdrop-blur-xl text-white border border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.22),0_10px_28px_rgba(0,0,0,0.4)]'
+                  : 'text-zinc-400 hover:text-white hover:bg-white/[0.05] border border-transparent hover:border-white/[0.08]'
               }`}
             >
-              <div className={`p-1.5 rounded-lg transition-colors ${
+              <div className={`p-2 rounded-lg transition-colors ${
                 isActive 
-                  ? 'bg-slate-800 text-white' 
-                  : 'bg-transparent text-slate-500 group-hover:text-slate-800'
+                  ? 'bg-white text-zinc-950 shadow-sm' 
+                  : 'bg-white/[0.05] border border-white/[0.08] text-zinc-400 group-hover:text-white group-hover:bg-white/[0.1]'
               }`}>
                 <Icon className="w-4 h-4" />
               </div>
@@ -67,7 +71,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
                 <p className="text-sm font-semibold tracking-tight truncate">
                   {item.label}
                 </p>
-                <p className={`text-xs truncate ${isActive ? 'text-slate-300' : 'text-slate-500'}`}>
+                <p className={`text-xs truncate ${isActive ? 'text-zinc-300' : 'text-zinc-500 group-hover:text-zinc-400'}`}>
                   {item.subtitle}
                 </p>
               </div>
@@ -75,7 +79,6 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           );
         })}
       </div>
-
     </aside>
   );
 }

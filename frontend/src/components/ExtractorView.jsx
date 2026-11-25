@@ -271,157 +271,203 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
   }, [results?.received?.transactions, recvSearchLower]);
 
   return (
-    <div className="flex-1 p-6 md:p-8 space-y-6 w-full h-full overflow-y-auto bg-gradient-to-b from-slate-50 via-[#f5f7fb] to-slate-100/70">
-      
-      {/* Top Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-200/80">
-        <div className="flex items-start sm:items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-indigo-800 text-white flex items-center justify-center shadow-md shadow-indigo-950/15 shrink-0">
-            <Layers className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-                Statement Extractor
-              </h1>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-600/15">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-                Multi-Bank Engine
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 mt-1">
-              Parse ICICI, Kotak, Axis, IDBI &amp; IDFC statements with automatic holder mapping.
-            </p>
-          </div>
-        </div>
-
-        {results && (
-          <div className="inline-flex items-center gap-1.5 p-1.5 rounded-2xl bg-white border border-slate-200/90 shadow-sm self-start lg:self-auto">
-            <button
-              type="button"
-              onClick={() => copyToClipboard(results.combined_text, 'combined', 'Combined List')}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 transition-all cursor-pointer active:scale-95"
-            >
-              {copiedSection === 'combined' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
-              <span>{copiedSection === 'combined' ? 'Copied' : 'Copy All'}</span>
-            </button>
-            <div className="w-px h-5 bg-slate-200" />
-            <button
-              type="button"
-              onClick={() => downloadText('send_received.txt', results.combined_text)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100/80 transition-all cursor-pointer active:scale-95"
-            >
-              <Download className="w-4 h-4 text-slate-500" />
-              <span>.TXT</span>
-            </button>
-            <button
-              type="button"
-              onClick={downloadCSV}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-indigo-600 transition-all shadow-sm cursor-pointer active:scale-95"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-slate-200" />
-              <span>Export CSV</span>
-            </button>
-          </div>
-        )}
+    <div className="relative flex-1 w-full h-full overflow-hidden bg-gradient-to-br from-[#0b0d12] via-[#1a1e28] to-[#0c0e14]">
+      {/* 3D Floating Spheres & Frosted Light Orbs Backdrop for Glassmorphism Refraction */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden select-none" aria-hidden="true">
+        {/* Soft upper-left luminous silver aura */}
+        <div className="absolute -top-24 -left-16 w-[420px] h-[420px] rounded-full bg-white/[0.06] blur-3xl" />
+        {/* Floating 3D dark obsidian sphere (left edge) */}
+        <div
+          className="absolute top-[18%] -left-16 w-48 h-48 rounded-full shadow-2xl"
+          style={{
+            background: 'radial-gradient(circle at 32% 28%, #475569 0%, #1e293b 38%, #05070a 85%)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.85), inset -8px -12px 24px rgba(0,0,0,0.9)',
+          }}
+        />
+        {/* Luminous frosted ring behind center dropzone */}
+        <div className="absolute top-[22%] left-[26%] w-72 h-72 rounded-full border-[28px] border-white/[0.07] blur-xl" />
+        {/* Floating 3D glossy glass sphere (top right) */}
+        <div
+          className="absolute top-8 right-[10%] w-24 h-24 rounded-full rotate-12"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.06) 50%, rgba(0,0,0,0.4) 100%)',
+            border: '1px solid rgba(255,255,255,0.28)',
+            boxShadow: 'inset 0 2px 6px rgba(255,255,255,0.45), 0 18px 40px rgba(0,0,0,0.55)',
+          }}
+        />
+        {/* Floating faceted silver glow orb (right edge) */}
+        <div
+          className="absolute bottom-[14%] right-[4%] w-36 h-36 rounded-full"
+          style={{
+            background: 'radial-gradient(circle at 30% 30%, #f1f5f9 0%, #94a3b8 42%, #334155 88%)',
+            opacity: 0.75,
+            filter: 'blur(0.5px)',
+            boxShadow: '0 24px 60px rgba(0,0,0,0.75)',
+          }}
+        />
+        {/* Bottom-left matte dark sphere */}
+        <div
+          className="absolute -bottom-14 left-[22%] w-36 h-36 rounded-full"
+          style={{
+            background: 'radial-gradient(circle at 35% 30%, #334155 0%, #0f172a 48%, #020408 90%)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.85)',
+          }}
+        />
+        {/* Soft center-right luminous haze */}
+        <div className="absolute bottom-[18%] right-[24%] w-80 h-80 rounded-full bg-indigo-400/[0.07] blur-3xl" />
       </div>
 
-      {/* Upload Dropzone & File Management */}
-      <ExtractorDropzone
-        files={files}
-        isDragging={isDragging}
-        isProcessing={isProcessing}
-        fileInputRef={fileInputRef}
-        onFileChange={handleFileChange}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onBrowseClick={() => fileInputRef.current?.click()}
-        onRemoveFile={removeFile}
-        onClearAll={clearAll}
-        onProceed={handleProceedClick}
-        formatFileSize={formatFileSize}
-      />
-
-      {/* Executive Summary KPI Strip */}
-      {results && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-between gap-4">
-            <div className="space-y-1 min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Total Send (Debit)
-              </p>
-              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-mono tabular-nums truncate">
-                {results.send.total_formatted}
-              </p>
-              <p className="text-xs font-medium text-rose-600">
-                {results.send.count} outgoing {results.send.count === 1 ? 'transaction' : 'transactions'}
-              </p>
+      {/* Scrollable Glass Foreground Workspace */}
+      <div className="relative z-10 h-full w-full overflow-y-auto p-6 md:p-8 space-y-6">
+        {/* Top Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-white/[0.12]">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/[0.1] border border-white/20 backdrop-blur-xl text-white flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.28),0_10px_28px_rgba(0,0,0,0.45)] shrink-0">
+              <Layers className="w-5 h-5" />
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-inset ring-rose-600/15 flex items-center justify-center shrink-0">
-              <ArrowUpRight className="w-5 h-5" />
+            <div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl font-extrabold tracking-tight text-white">
+                  STATEMENT <span className="font-light italic text-zinc-300">EXTRACTOR</span>
+                </h1>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/[0.08] text-zinc-200 border border-white/[0.15] backdrop-blur-md">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                  Multi-Bank Engine
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+                Parse ICICI, Kotak, Axis, IDBI &amp; IDFC statements with automatic holder mapping.
+              </p>
             </div>
           </div>
 
-          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-between gap-4">
-            <div className="space-y-1 min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Total Received (Credit)
-              </p>
-              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-mono tabular-nums truncate">
-                {results.received.total_formatted}
-              </p>
-              <p className="text-xs font-medium text-emerald-600">
-                {results.received.count} incoming {results.received.count === 1 ? 'transaction' : 'transactions'}
-              </p>
+          {results && (
+            <div className="inline-flex items-center gap-1.5 p-1.5 rounded-2xl glass-tile self-start lg:self-auto">
+              <button
+                type="button"
+                onClick={() => copyToClipboard(results.combined_text, 'combined', 'Combined List')}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-200 hover:text-white hover:bg-white/[0.1] transition-all cursor-pointer active:scale-95"
+              >
+                {copiedSection === 'combined' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-zinc-300" />}
+                <span>{copiedSection === 'combined' ? 'Copied' : 'Copy All'}</span>
+              </button>
+              <div className="w-px h-5 bg-white/[0.14]" />
+              <button
+                type="button"
+                onClick={() => downloadText('send_received.txt', results.combined_text)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-200 hover:text-white hover:bg-white/[0.1] transition-all cursor-pointer active:scale-95"
+              >
+                <Download className="w-4 h-4 text-zinc-300" />
+                <span>.TXT</span>
+              </button>
+              <button
+                type="button"
+                onClick={downloadCSV}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-zinc-950 hover:bg-zinc-200 transition-all shadow-[0_4px_16px_rgba(255,255,255,0.18)] cursor-pointer active:scale-95"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-zinc-800" />
+                <span>Export CSV</span>
+              </button>
             </div>
-            <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-600/15 flex items-center justify-center shrink-0">
-              <ArrowDownLeft className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex items-center justify-between gap-4">
-            <div className="space-y-1 min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Batch Summary
-              </p>
-              <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-mono tabular-nums truncate">
-                {results.send.count + results.received.count} Entries
-              </p>
-              <p className="text-xs font-medium text-indigo-600">
-                Extracted from {results.files?.length || files.length} {(results.files?.length || files.length) === 1 ? 'statement' : 'statements'}
-              </p>
-            </div>
-            <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 ring-1 ring-inset ring-indigo-600/15 flex items-center justify-center shrink-0">
-              <FileCheck2 className="w-5 h-5" />
-            </div>
-          </div>
+          )}
         </div>
-      )}
 
-      {/* Output Dual Split View: Send vs Received */}
-      {results && (
-        <TransactionPanel
-          results={results}
-          sendSearch={sendSearch}
-          onSendSearchChange={setSendSearch}
-          recvSearch={recvSearch}
-          onRecvSearchChange={setRecvSearch}
-          filteredSend={filteredSend}
-          filteredRecv={filteredRecv}
-          copiedSection={copiedSection}
-          onCopySection={copyToClipboard}
+        {/* Upload Dropzone & File Management */}
+        <ExtractorDropzone
+          files={files}
+          isDragging={isDragging}
+          isProcessing={isProcessing}
+          fileInputRef={fileInputRef}
+          onFileChange={handleFileChange}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onBrowseClick={() => fileInputRef.current?.click()}
+          onRemoveFile={removeFile}
+          onClearAll={clearAll}
+          onProceed={handleProceedClick}
+          formatFileSize={formatFileSize}
         />
-      )}
 
-      {/* Missing Bank Statements Warning Modal */}
-      <MissingBanksModal
-        isOpen={showWarningModal}
-        warningData={warningData}
-        onClose={() => setShowWarningModal(false)}
-        onProceedAnyway={executeExtract}
-      />
+        {/* Executive Summary KPI Strip */}
+        {results && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4">
+              <div className="space-y-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">
+                  Total Send (Debit)
+                </p>
+                <p className="text-xl sm:text-2xl font-extrabold text-white font-mono tabular-nums truncate">
+                  {results.send.total_formatted}
+                </p>
+                <p className="text-xs font-medium text-rose-300">
+                  {results.send.count} outgoing {results.send.count === 1 ? 'transaction' : 'transactions'}
+                </p>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-rose-500/15 text-rose-300 border border-rose-400/25 flex items-center justify-center shrink-0">
+                <ArrowUpRight className="w-5 h-5" />
+              </div>
+            </div>
 
+            <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4">
+              <div className="space-y-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">
+                  Total Received (Credit)
+                </p>
+                <p className="text-xl sm:text-2xl font-extrabold text-white font-mono tabular-nums truncate">
+                  {results.received.total_formatted}
+                </p>
+                <p className="text-xs font-medium text-emerald-300">
+                  {results.received.count} incoming {results.received.count === 1 ? 'transaction' : 'transactions'}
+                </p>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/25 flex items-center justify-center shrink-0">
+                <ArrowDownLeft className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4">
+              <div className="space-y-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">
+                  Batch Summary
+                </p>
+                <p className="text-xl sm:text-2xl font-extrabold text-white font-mono tabular-nums truncate">
+                  {results.send.count + results.received.count} Entries
+                </p>
+                <p className="text-xs font-medium text-zinc-300">
+                  Extracted from {results.files?.length || files.length} {(results.files?.length || files.length) === 1 ? 'statement' : 'statements'}
+                </p>
+              </div>
+              <div className="w-11 h-11 rounded-2xl bg-white/10 text-white border border-white/20 flex items-center justify-center shrink-0">
+                <FileCheck2 className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Output Dual Split View: Send vs Received */}
+        {results && (
+          <TransactionPanel
+            results={results}
+            sendSearch={sendSearch}
+            onSendSearchChange={setSendSearch}
+            recvSearch={recvSearch}
+            onRecvSearchChange={setRecvSearch}
+            filteredSend={filteredSend}
+            filteredRecv={filteredRecv}
+            copiedSection={copiedSection}
+            onCopySection={copyToClipboard}
+          />
+        )}
+
+        {/* Missing Bank Statements Warning Modal */}
+        <MissingBanksModal
+          isOpen={showWarningModal}
+          warningData={warningData}
+          onClose={() => setShowWarningModal(false)}
+          onProceedAnyway={executeExtract}
+        />
+      </div>
     </div>
   );
 }

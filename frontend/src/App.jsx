@@ -71,23 +71,23 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <div className="flex h-full w-full overflow-hidden bg-white font-sans text-slate-900">
+      <div className="flex h-full w-full overflow-hidden bg-[#0a0c10] font-sans text-white">
         
-        {/* Docked Edge-to-Edge Fullscreen Sidebar */}
+        {/* Docked Frosted Glass Sidebar */}
         <Sidebar 
           activeTab={activeTab} 
           setActiveTab={handleTabChange} 
         />
 
         {/* Main Fullscreen Workspace with Preserved Tab State */}
-        <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white relative">
+        <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
           <div className={`h-full w-full flex flex-col min-w-0 overflow-hidden ${activeTab === 'extractor' ? '' : 'hidden'}`}>
             <ExtractorView 
               isActive={activeTab === 'extractor'}
               onNavigateToSettings={() => handleTabChange('settings')}
             />
           </div>
-          <div className={`h-full w-full flex flex-col min-w-0 overflow-hidden ${activeTab === 'settings' ? '' : 'hidden'}`}>
+          <div className={`h-full w-full flex flex-col min-w-0 overflow-hidden bg-[#f8fafc] text-slate-900 ${activeTab === 'settings' ? '' : 'hidden'}`}>
             <SettingsView />
           </div>
         </main>
