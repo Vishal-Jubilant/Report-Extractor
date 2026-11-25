@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 import io
 import os
 import socket
@@ -19,7 +20,7 @@ if BASE_DIR not in sys.path:
 
 from backend.config import account_codes, accounts, bank_layouts, enterprise_banks, name_mappings, regex_patterns
 from backend.config.pdf_generator import create_zip_archive, get_collection_zip_filename, process_excel_to_pdfs
-from backend.database import get_worker_session
+from backend.database import get_worker_session, init_db
 from backend.database.models import Bank, Enterprise, AccountCode
 from backend.core.extractor import (
     account_sort_key,
@@ -45,7 +46,22 @@ def _get_local_ip() -> str:
 
 LOCAL_IP = _get_local_ip()
 
-app = FastAPI(title="RTGS Bank Statement Extractor API", version="2.1.0")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Ensure database tables exist when the FastAPI app starts directly."""
+    try:
+        init_db()
+    except Exception as exc:
+        print(f"[WARN] Database table initialization skipped/failed: {exc}")
+    yield
+
+
+app = FastAPI(
+    title="RTGS Bank Statement Extractor API",
+    version="2.1.0",
+    lifespan=lifespan,
+)
 
 # Security: Specific local origins + LAN IP + regex for any local dev port
 app.add_middleware(

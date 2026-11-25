@@ -1,30 +1,13 @@
 import importlib.util
 import os
-import socket
 import subprocess
 import sys
 import time
 
-
-def _get_local_ip() -> str:
-    """Return the machine's LAN IP (e.g. 192.168.x.x). Falls back to 127.0.0.1."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(1)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        return "127.0.0.1"
-
-
-LOCAL_IP = _get_local_ip()
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 VENV_DIR = os.path.join(BASE_DIR, ".venv")
-ENV_FILE = os.path.join(BASE_DIR, "backend", ".env")
+ENV_FILE = os.path.join(BASE_DIR, ".env")
 
 if os.name == "nt":
     VENV_PYTHON = os.path.join(VENV_DIR, "Scripts", "python.exe")
@@ -41,7 +24,6 @@ REQUIRED_MODULES = [
     "dotenv",
     "sqlalchemy",
     "psycopg",
-    "alembic",
     "pandas",
     "pdfplumber",
     "openpyxl",
@@ -52,8 +34,7 @@ REQUIRED_MODULES = [
 def banner():
     print("=" * 68)
     print("      RTGS TransactFlow - Automated Startup & Preflight Check")
-    print(f"         Backend: FastAPI (:{4501}) | Frontend: React + Vite (:{4500})")
-    print(f"         Local IP: {LOCAL_IP}")
+    print("         Backend: FastAPI (:4501) | Frontend: React + Vite (:4500)")
     print("=" * 68)
 
 
@@ -109,7 +90,7 @@ def step1_setup_and_activate_venv():
     else:
         print("  [OK] Virtual environment found at .venv.")
 
-    req_file = os.path.join(BASE_DIR, "backend", "requirements.txt")
+    req_file = os.path.join(BASE_DIR, "requirements.txt")
     missing = _missing_packages(VENV_PYTHON)
     if os.path.exists(req_file) and (created_now or missing):
         if missing:
@@ -269,17 +250,18 @@ def step3_ensure_database_exists(db: dict):
         sys.exit(1)
 
 
-def step4_validate_and_migrate_schema():
+def step4_validate_and_init_schema():
     """
-    STEP 4: Database Schema Validation & Auto-Migration.
-    Runs Alembic migrations ('upgrade head') and validates all ORM model tables exist.
+    STEP 4: Database Schema Validation & Table Initialization.
+    Creates any missing ORM tables via SQLAlchemy metadata and validates all expected tables and columns exist.
     """
-    print("\n[STEP 4/5] Database Schema Validation & Auto-Migration...")
+    print("\n[STEP 4/5] Database Schema Validation & Table Initialization...")
 
     if BASE_DIR not in sys.path:
         sys.path.insert(0, BASE_DIR)
 
     from sqlalchemy import inspect
+    from backend.database import init_db
     from backend.database.config import engine
     from backend.database.models import Base
 
@@ -287,32 +269,20 @@ def step4_validate_and_migrate_schema():
     inspector = inspect(engine)
     existing_before = set(inspector.get_table_names())
     print(f"  -> Expected tables: {sorted(expected_tables)}")
-    print(f"  -> Running Alembic auto-migration (alembic upgrade head)...")
+    print("  -> Ensuring ORM tables exist (Base.metadata.create_all)...")
 
-    mig_res = subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
-        cwd=os.path.join(BASE_DIR, "backend"),
-        capture_output=True,
-        text=True,
-    )
-    if mig_res.returncode != 0:
-        print("  [ERROR] Alembic migration failed:")
-        if mig_res.stdout:
-            print(mig_res.stdout)
-        if mig_res.stderr:
-            print(mig_res.stderr)
+    try:
+        init_db()
+    except Exception as exc:
+        print(f"  [ERROR] Database schema initialization failed: {exc}")
         sys.exit(1)
-
-    if mig_res.stdout.strip():
-        for line in mig_res.stdout.strip().splitlines():
-            print(f"     {line}")
 
     # Validate tables & columns match ORM models
     inspector = inspect(engine)
     existing_after = set(inspector.get_table_names())
     missing_tables = expected_tables - existing_after
     if missing_tables:
-        print(f"  [ERROR] Schema validation failed; missing tables after migration: {sorted(missing_tables)}")
+        print(f"  [ERROR] Schema validation failed; missing tables: {sorted(missing_tables)}")
         sys.exit(1)
 
     for table_name, table_obj in Base.metadata.tables.items():
@@ -326,7 +296,7 @@ def step4_validate_and_migrate_schema():
             sys.exit(1)
 
     if not existing_before & expected_tables:
-        print("  [OK] Initial schema migrated and validated.")
+        print("  [OK] Initial schema created and validated.")
     else:
         print(f"  [OK] Schema up-to-date and validated ({len(expected_tables)} tables verified).")
 
@@ -353,14 +323,14 @@ def step5_start_servers():
     except Exception as exc:
         print(f"  [WARN] Notice on npm setup: {exc}")
 
-    print(f"  -> Starting FastAPI Backend on http://{LOCAL_IP}:4501 (also 127.0.0.1:4501)...")
+    print("  -> Starting FastAPI Backend on http://127.0.0.1:4501...")
     backend_cmd = [
         sys.executable,
         "-m",
         "uvicorn",
         "backend.main:app",
         "--host",
-        "0.0.0.0",
+        "127.0.0.1",
         "--port",
         "4501",
         "--reload",
@@ -385,13 +355,7 @@ def step5_start_servers():
             print(".", end="", flush=True)
     print(" OK" if backend_ready else " (timeout, starting frontend anyway)")
 
-    print(f"  -> Starting React + Tailwind UI on http://{LOCAL_IP}:4500...")
-    # Write the backend IP into frontend/.env.local so Vite proxy knows where to forward
-    env_local_path = os.path.join(FRONTEND_DIR, ".env.local")
-    with open(env_local_path, "w") as f:
-        f.write(f"VITE_BACKEND_HOST={LOCAL_IP}\n")
-        f.write(f"VITE_BACKEND_PORT=4501\n")
-        f.write(f"VITE_FRONTEND_PORT=4500\n")
+    print("  -> Starting React + Tailwind UI on http://localhost:4500...")
     frontend_cmd = f"{NPM_CMD} run dev"
     frontend_process = subprocess.Popen(
         frontend_cmd,
@@ -402,8 +366,8 @@ def step5_start_servers():
 
     print("\n" + "-" * 68)
     print("  App is running!")
-    print(f"  Frontend UI:  http://{LOCAL_IP}:4500  (also http://localhost:4500)")
-    print(f"  Backend API:  http://{LOCAL_IP}:4501/docs  (also http://127.0.0.1:4501/docs)")
+    print("  Frontend UI:  http://localhost:4500")
+    print("  Backend API:  http://127.0.0.1:4501/docs")
     print("  Press Ctrl+C in this terminal to stop both servers.")
     print("-" * 68 + "\n")
 
@@ -436,7 +400,7 @@ def run_preflight_only():
     step1_setup_and_activate_venv()
     db = step2_verify_db_credentials()
     step3_ensure_database_exists(db)
-    step4_validate_and_migrate_schema()
+    step4_validate_and_init_schema()
     print("\n[PREFLIGHT COMPLETE] All 4 preflight checks passed.")
 
 
@@ -454,7 +418,7 @@ def main():
     step1_setup_and_activate_venv()
     db = step2_verify_db_credentials()
     step3_ensure_database_exists(db)
-    step4_validate_and_migrate_schema()
+    step4_validate_and_init_schema()
     step5_start_servers()
 
 

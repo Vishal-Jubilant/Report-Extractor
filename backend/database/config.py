@@ -55,3 +55,10 @@ SessionFactory = sessionmaker(
     autoflush=False,
     expire_on_commit=False,
 )
+
+
+def init_db() -> None:
+    """Create any missing database tables defined on Base.metadata."""
+    from backend.database.models import Base
+
+    Base.metadata.create_all(bind=engine)
