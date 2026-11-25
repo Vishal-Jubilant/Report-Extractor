@@ -62,17 +62,14 @@ export default function TransactionPanel({
                   const content = sendLines ? `Yesterday Send Transaction\n\n${sendLines}` : '';
                   onCopySection(content, 'send', 'Send List');
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95"
-                title="Copy formatted 1.SS - Party - Amount lines"
+                className="flex items-center justify-center p-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95"
+                title="Copy Yesterday Send Transaction list"
+                aria-label="Copy Send List"
               >
                 {copiedSection === 'send' ? (
-                  <>
-                    <Check className="w-3.5 h-3.5" /> Copied
-                  </>
+                  <Check className="w-5 h-5 text-emerald-400" />
                 ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" /> Copy List
-                  </>
+                  <Copy className="w-5 h-5" />
                 )}
               </button>
             </div>
@@ -162,17 +159,14 @@ export default function TransactionPanel({
                   const content = recvLines ? `Yesterday Received Transaction\n\n${recvLines}` : '';
                   onCopySection(content, 'received', 'Received List');
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95"
-                title="Copy formatted 1.SS - Party - Amount lines"
+                className="flex items-center justify-center p-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95"
+                title="Copy Yesterday Received Transaction list"
+                aria-label="Copy Received List"
               >
                 {copiedSection === 'received' ? (
-                  <>
-                    <Check className="w-3.5 h-3.5" /> Copied
-                  </>
+                  <Check className="w-5 h-5 text-emerald-400" />
                 ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" /> Copy List
-                  </>
+                  <Copy className="w-5 h-5" />
                 )}
               </button>
             </div>
