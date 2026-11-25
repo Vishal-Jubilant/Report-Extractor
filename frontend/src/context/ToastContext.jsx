@@ -26,13 +26,13 @@ export function ToastProvider({ children }) {
   const renderToastIcon = (type) => {
     switch (type) {
       case 'success':
-        return <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />;
+        return <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />;
       case 'warning':
-        return <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />;
+        return <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />;
       case 'error':
-        return <XCircle className="w-4 h-4 text-rose-400 shrink-0" />;
+        return <XCircle className="w-4 h-4 text-rose-600 shrink-0" />;
       default:
-        return <Info className="w-4 h-4 text-zinc-200 shrink-0" />;
+        return <Info className="w-4 h-4 text-slate-700 shrink-0" />;
     }
   };
 
@@ -40,20 +40,20 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ notify, dismissToast }}>
       {children}
 
-      {/* Accessible Frosted Glass Toast Notification */}
+      {/* Accessible White Frosted Glass Toast Notification */}
       {toast && (
         <div 
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900/80 backdrop-blur-2xl border border-white/20 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_16px_40px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-2 duration-150"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-white/85 backdrop-blur-2xl border border-slate-200/90 shadow-[0_12px_36px_rgba(15,23,42,0.12)] animate-in fade-in slide-in-from-bottom-2 duration-150"
         >
           {renderToastIcon(toast.type)}
-          <span className="text-xs font-medium text-white">{toast.message}</span>
+          <span className="text-xs font-semibold text-slate-800">{toast.message}</span>
           <button 
             type="button"
             onClick={dismissToast}
             aria-label="Dismiss notification"
-            className="text-zinc-400 hover:text-white p-0.5 ml-2 cursor-pointer transition-colors"
+            className="text-slate-400 hover:text-slate-700 p-0.5 ml-2 cursor-pointer transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>

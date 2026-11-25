@@ -71,7 +71,7 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <div className="flex h-full w-full overflow-hidden bg-[#191d26] font-sans text-white">
+      <div className="flex h-full w-full overflow-hidden bg-[#f4f7fb] font-sans text-slate-900">
 
         {/* Docked Frosted Glass Sidebar */}
         <Sidebar

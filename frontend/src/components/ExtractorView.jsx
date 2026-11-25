@@ -274,28 +274,28 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
     <div
       className="relative flex-1 w-full h-full overflow-hidden"
       style={{
-        background: 'radial-gradient(ellipse at 25% 15%, #262b36 0%, #1c2029 48%, #151820 100%)',
+        background: 'radial-gradient(ellipse at 18% 12%, #ffffff 0%, #f3f6fb 48%, #e9eef7 100%)',
       }}
     >
       {/* Scrollable Glass Foreground Workspace */}
       <div className="relative z-10 h-full w-full overflow-y-auto p-6 md:p-8 space-y-6">
         {/* Top Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-white/[0.12]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-200/80">
           <div className="flex items-start sm:items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/[0.1] border border-white/20 backdrop-blur-xl text-white flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.28),0_10px_28px_rgba(0,0,0,0.45)] shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-center shadow-lg shadow-slate-900/15 shrink-0">
               <Layers className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-extrabold tracking-tight text-white">
-                  STATEMENT <span className="font-light italic text-zinc-300">EXTRACTOR</span>
+                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+                  STATEMENT <span className="font-light italic text-slate-500">EXTRACTOR</span>
                 </h1>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/[0.08] text-zinc-200 border border-white/[0.15] backdrop-blur-md">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/80 text-slate-700 border border-slate-200/90 shadow-sm backdrop-blur-md">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   Multi-Bank Engine
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-zinc-400 mt-1">
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">
                 Parse ICICI, Kotak, Axis, IDBI &amp; IDFC statements with automatic holder mapping.
               </p>
             </div>
@@ -306,26 +306,26 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
               <button
                 type="button"
                 onClick={() => copyToClipboard(results.combined_text, 'combined', 'Combined List')}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-200 hover:text-white hover:bg-white/[0.1] transition-all cursor-pointer active:scale-95"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-white transition-all cursor-pointer active:scale-95"
               >
-                {copiedSection === 'combined' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-zinc-300" />}
+                {copiedSection === 'combined' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
                 <span>{copiedSection === 'combined' ? 'Copied' : 'Copy All'}</span>
               </button>
-              <div className="w-px h-5 bg-white/[0.14]" />
+              <div className="w-px h-5 bg-slate-200/90" />
               <button
                 type="button"
                 onClick={() => downloadText('send_received.txt', results.combined_text)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-zinc-200 hover:text-white hover:bg-white/[0.1] transition-all cursor-pointer active:scale-95"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-white transition-all cursor-pointer active:scale-95"
               >
-                <Download className="w-4 h-4 text-zinc-300" />
+                <Download className="w-4 h-4 text-slate-500" />
                 <span>.TXT</span>
               </button>
               <button
                 type="button"
                 onClick={downloadCSV}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-zinc-950 hover:bg-zinc-200 transition-all shadow-[0_4px_16px_rgba(255,255,255,0.18)] cursor-pointer active:scale-95"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-indigo-600 transition-all shadow-sm cursor-pointer active:scale-95"
               >
-                <FileSpreadsheet className="w-4 h-4 text-zinc-800" />
+                <FileSpreadsheet className="w-4 h-4 text-slate-200" />
                 <span>Export CSV</span>
               </button>
             </div>
@@ -354,51 +354,51 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4">
               <div className="space-y-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
                   Total Send (Debit)
                 </p>
-                <p className="text-xl sm:text-2xl font-extrabold text-white font-mono tabular-nums truncate">
+                <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-mono tabular-nums truncate">
                   {results.send.total_formatted}
                 </p>
-                <p className="text-xs font-medium text-rose-300">
+                <p className="text-xs font-medium text-rose-600">
                   {results.send.count} outgoing {results.send.count === 1 ? 'transaction' : 'transactions'}
                 </p>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-rose-500/15 text-rose-300 border border-rose-400/25 flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-inset ring-rose-600/15 flex items-center justify-center shrink-0">
                 <ArrowUpRight className="w-5 h-5" />
               </div>
             </div>
 
             <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4">
               <div className="space-y-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
                   Total Received (Credit)
                 </p>
-                <p className="text-xl sm:text-2xl font-extrabold text-white font-mono tabular-nums truncate">
+                <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-mono tabular-nums truncate">
                   {results.received.total_formatted}
                 </p>
-                <p className="text-xs font-medium text-emerald-300">
+                <p className="text-xs font-medium text-emerald-600">
                   {results.received.count} incoming {results.received.count === 1 ? 'transaction' : 'transactions'}
                 </p>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/25 flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-600/15 flex items-center justify-center shrink-0">
                 <ArrowDownLeft className="w-5 h-5" />
               </div>
             </div>
 
             <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4">
               <div className="space-y-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
                   Batch Summary
                 </p>
-                <p className="text-xl sm:text-2xl font-extrabold text-white font-mono tabular-nums truncate">
+                <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-mono tabular-nums truncate">
                   {results.send.count + results.received.count} Entries
                 </p>
-                <p className="text-xs font-medium text-zinc-300">
+                <p className="text-xs font-medium text-indigo-600">
                   Extracted from {results.files?.length || files.length} {(results.files?.length || files.length) === 1 ? 'statement' : 'statements'}
                 </p>
               </div>
-              <div className="w-11 h-11 rounded-2xl bg-white/10 text-white border border-white/20 flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 ring-1 ring-inset ring-indigo-600/15 flex items-center justify-center shrink-0">
                 <FileCheck2 className="w-5 h-5" />
               </div>
             </div>
