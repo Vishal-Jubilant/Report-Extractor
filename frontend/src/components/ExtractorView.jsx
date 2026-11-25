@@ -28,7 +28,6 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
   // Filters & State
   const [sendSearch, setSendSearch] = useState('');
   const [recvSearch, setRecvSearch] = useState('');
-  const [expandedFiles, setExpandedFiles] = useState({});
   const [copiedSection, setCopiedSection] = useState(null);
 
   const fileInputRef = useRef(null);
@@ -242,10 +241,6 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
     URL.revokeObjectURL(url);
   };
 
-  const toggleFileAccordion = (idx) => {
-    setExpandedFiles(prev => ({ ...prev, [idx]: !prev[idx] }));
-  };
-
   // Optimized Memoized Transaction Filtering
   const sendSearchLower = sendSearch.trim().toLowerCase();
   const filteredSend = useMemo(() => {
@@ -332,7 +327,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
         formatFileSize={formatFileSize}
       />
 
-      {/* Output Dual Split View: Send vs Received & File Breakdown */}
+      {/* Output Dual Split View: Send vs Received */}
       {results && (
         <TransactionPanel
           results={results}
@@ -342,11 +337,8 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
           onRecvSearchChange={setRecvSearch}
           filteredSend={filteredSend}
           filteredRecv={filteredRecv}
-          expandedFiles={expandedFiles}
-          onToggleFileAccordion={toggleFileAccordion}
           copiedSection={copiedSection}
           onCopySection={copyToClipboard}
-          onNavigateToSettings={onNavigateToSettings}
         />
       )}
 
