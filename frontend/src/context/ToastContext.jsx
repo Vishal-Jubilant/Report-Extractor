@@ -40,15 +40,15 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ notify, dismissToast }}>
       {children}
 
-      {/* Accessible White Frosted Glass Toast Notification */}
+      {/* Accessible Toast Notification Container */}
       {toast && (
         <div 
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-white/85 backdrop-blur-2xl border border-slate-200/90 shadow-[0_12px_36px_rgba(15,23,42,0.12)] animate-in fade-in slide-in-from-bottom-2 duration-150"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl glass-modal animate-in fade-in slide-in-from-bottom-2 duration-150"
         >
           {renderToastIcon(toast.type)}
-          <span className="text-xs font-semibold text-slate-800">{toast.message}</span>
+          <span className="text-xs font-medium text-slate-800">{toast.message}</span>
           <button 
             type="button"
             onClick={dismissToast}

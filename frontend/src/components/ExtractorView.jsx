@@ -1,13 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import {
-  FileSpreadsheet,
-  Copy,
-  Check,
-  Download,
-  Layers,
-  ArrowUpRight,
-  ArrowDownLeft,
-  FileCheck2
+import { 
+  FileSpreadsheet, 
+  Copy, 
+  Check, 
+  Download 
 } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import ExtractorDropzone from './extractor/ExtractorDropzone';
@@ -251,7 +247,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
     const txs = results?.send?.transactions;
     if (!txs || txs.length === 0) return [];
     if (!sendSearchLower) return txs;
-    return txs.filter(item =>
+    return txs.filter(item => 
       (item.name && item.name.toLowerCase().includes(sendSearchLower)) ||
       (item.account && item.account.toLowerCase().includes(sendSearchLower)) ||
       (item.short && item.short.toLowerCase().includes(sendSearchLower))
@@ -263,7 +259,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
     const txs = results?.received?.transactions;
     if (!txs || txs.length === 0) return [];
     if (!recvSearchLower) return txs;
-    return txs.filter(item =>
+    return txs.filter(item => 
       (item.name && item.name.toLowerCase().includes(recvSearchLower)) ||
       (item.account && item.account.toLowerCase().includes(recvSearchLower)) ||
       (item.short && item.short.toLowerCase().includes(recvSearchLower))
@@ -271,163 +267,89 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
   }, [results?.received?.transactions, recvSearchLower]);
 
   return (
-    <div
-      className="relative flex-1 w-full h-full overflow-hidden"
-      style={{
-        background: 'radial-gradient(ellipse at 18% 12%, #ffffff 0%, #f3f6fb 48%, #e9eef7 100%)',
-      }}
-    >
-      {/* Scrollable Glass Foreground Workspace */}
-      <div className="relative z-10 h-full w-full overflow-y-auto p-6 md:p-8 space-y-6">
-        {/* Top Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-200/80">
-          <div className="flex items-start sm:items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white flex items-center justify-center shadow-lg shadow-slate-900/15 shrink-0">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-                  STATEMENT <span className="font-light italic text-slate-500">EXTRACTOR</span>
-                </h1>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/80 text-slate-700 border border-slate-200/90 shadow-sm backdrop-blur-md">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Multi-Bank Engine
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                Parse ICICI, Kotak, Axis, IDBI &amp; IDFC statements with automatic holder mapping.
-              </p>
-            </div>
-          </div>
-
-          {results && (
-            <div className="inline-flex items-center gap-1.5 p-1.5 rounded-2xl glass-tile self-start lg:self-auto">
-              <button
-                type="button"
-                onClick={() => copyToClipboard(results.combined_text, 'combined', 'Combined List')}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-white transition-all cursor-pointer active:scale-95"
-              >
-                {copiedSection === 'combined' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
-                <span>{copiedSection === 'combined' ? 'Copied' : 'Copy All'}</span>
-              </button>
-              <div className="w-px h-5 bg-slate-200/90" />
-              <button
-                type="button"
-                onClick={() => downloadText('send_received.txt', results.combined_text)}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-white transition-all cursor-pointer active:scale-95"
-              >
-                <Download className="w-4 h-4 text-slate-500" />
-                <span>.TXT</span>
-              </button>
-              <button
-                type="button"
-                onClick={downloadCSV}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-indigo-600 transition-all shadow-sm cursor-pointer active:scale-95"
-              >
-                <FileSpreadsheet className="w-4 h-4 text-slate-200" />
-                <span>Export CSV</span>
-              </button>
-            </div>
-          )}
+    <div className="flex-1 p-8 space-y-6 w-full h-full overflow-y-auto">
+      
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/70">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Statement Extractor
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Parse ICICI, Kotak, Axis, IDBI &amp; IDFC statements. Automatically identifies holder name and maps to account codes.
+          </p>
         </div>
 
-        {/* Upload Dropzone & File Management */}
-        <ExtractorDropzone
-          files={files}
-          isDragging={isDragging}
-          isProcessing={isProcessing}
-          fileInputRef={fileInputRef}
-          onFileChange={handleFileChange}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onBrowseClick={() => fileInputRef.current?.click()}
-          onRemoveFile={removeFile}
-          onClearAll={clearAll}
-          onProceed={handleProceedClick}
-          formatFileSize={formatFileSize}
-        />
-
-        {/* Executive Summary KPI Strip */}
         {results && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4">
-              <div className="space-y-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                  Total Send (Debit)
-                </p>
-                <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-mono tabular-nums truncate">
-                  {results.send.total_formatted}
-                </p>
-                <p className="text-xs font-medium text-rose-600">
-                  {results.send.count} outgoing {results.send.count === 1 ? 'transaction' : 'transactions'}
-                </p>
-              </div>
-              <div className="w-11 h-11 rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-inset ring-rose-600/15 flex items-center justify-center shrink-0">
-                <ArrowUpRight className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4">
-              <div className="space-y-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                  Total Received (Credit)
-                </p>
-                <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-mono tabular-nums truncate">
-                  {results.received.total_formatted}
-                </p>
-                <p className="text-xs font-medium text-emerald-600">
-                  {results.received.count} incoming {results.received.count === 1 ? 'transaction' : 'transactions'}
-                </p>
-              </div>
-              <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-600/15 flex items-center justify-center shrink-0">
-                <ArrowDownLeft className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="glass-panel rounded-2xl p-4 sm:p-5 flex items-center justify-between gap-4">
-              <div className="space-y-1 min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-                  Batch Summary
-                </p>
-                <p className="text-xl sm:text-2xl font-extrabold text-slate-900 font-mono tabular-nums truncate">
-                  {results.send.count + results.received.count} Entries
-                </p>
-                <p className="text-xs font-medium text-indigo-600">
-                  Extracted from {results.files?.length || files.length} {(results.files?.length || files.length) === 1 ? 'statement' : 'statements'}
-                </p>
-              </div>
-              <div className="w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-600 ring-1 ring-inset ring-indigo-600/15 flex items-center justify-center shrink-0">
-                <FileCheck2 className="w-5 h-5" />
-              </div>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => copyToClipboard(results.combined_text, 'combined', 'Combined List')}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold glass-card text-slate-700 hover:text-slate-900 cursor-pointer"
+            >
+              {copiedSection === 'combined' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
+              Copy All Text
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadText('send_received.txt', results.combined_text)}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold glass-card text-slate-700 hover:text-slate-900 cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-slate-500" />
+              .TXT
+            </button>
+            <button
+              type="button"
+              onClick={downloadCSV}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold glass-card text-slate-700 hover:text-slate-900 cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-slate-500" />
+              .CSV
+            </button>
           </div>
         )}
-
-        {/* Output Dual Split View: Send vs Received */}
-        {results && (
-          <TransactionPanel
-            results={results}
-            sendSearch={sendSearch}
-            onSendSearchChange={setSendSearch}
-            recvSearch={recvSearch}
-            onRecvSearchChange={setRecvSearch}
-            filteredSend={filteredSend}
-            filteredRecv={filteredRecv}
-            copiedSection={copiedSection}
-            onCopySection={copyToClipboard}
-          />
-        )}
-
-        {/* Missing Bank Statements Warning Modal */}
-        <MissingBanksModal
-          isOpen={showWarningModal}
-          warningData={warningData}
-          onClose={() => setShowWarningModal(false)}
-          onProceedAnyway={executeExtract}
-        />
       </div>
+
+      {/* Upload Dropzone & File Management */}
+      <ExtractorDropzone
+        files={files}
+        isDragging={isDragging}
+        isProcessing={isProcessing}
+        fileInputRef={fileInputRef}
+        onFileChange={handleFileChange}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onBrowseClick={() => fileInputRef.current?.click()}
+        onRemoveFile={removeFile}
+        onClearAll={clearAll}
+        onProceed={handleProceedClick}
+        formatFileSize={formatFileSize}
+      />
+
+      {/* Output Dual Split View: Send vs Received */}
+      {results && (
+        <TransactionPanel
+          results={results}
+          sendSearch={sendSearch}
+          onSendSearchChange={setSendSearch}
+          recvSearch={recvSearch}
+          onRecvSearchChange={setRecvSearch}
+          filteredSend={filteredSend}
+          filteredRecv={filteredRecv}
+          copiedSection={copiedSection}
+          onCopySection={copyToClipboard}
+        />
+      )}
+
+      {/* Missing Bank Statements Warning Modal */}
+      <MissingBanksModal
+        isOpen={showWarningModal}
+        warningData={warningData}
+        onClose={() => setShowWarningModal(false)}
+        onProceedAnyway={executeExtract}
+      />
+
     </div>
   );
 }
