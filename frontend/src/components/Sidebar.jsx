@@ -22,10 +22,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
   ];
 
   return (
-    <aside className="relative flex flex-col w-64 md:w-72 h-full bg-gradient-to-b from-[#10131a] via-[#0c0e14] to-[#090b10] p-5 border-r border-white/[0.1] shrink-0 select-none overflow-hidden">
-      {/* Subtle 3D glass glow behind sidebar */}
-      <div className="pointer-events-none absolute -top-20 -left-20 w-56 h-56 rounded-full bg-white/[0.04] blur-3xl" />
-      <div className="pointer-events-none absolute bottom-10 -right-24 w-56 h-56 rounded-full bg-indigo-500/[0.06] blur-3xl" />
+    <aside className="relative flex flex-col w-64 md:w-72 h-full bg-gradient-to-b from-[#1f242e] via-[#1a1e27] to-[#161922] p-5 border-r border-white/[0.1] shrink-0 select-none overflow-hidden">
 
       {/* Brand Header */}
       <div className="relative flex items-center gap-3.5 px-2 py-2.5 mb-6 pb-5 border-b border-white/[0.1]">

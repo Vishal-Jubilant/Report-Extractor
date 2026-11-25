@@ -6,20 +6,20 @@ import { ToastProvider } from './context/ToastContext';
 
 function getInitialTab() {
   if (typeof window === 'undefined') return 'extractor';
-  
+
   // 1. Check URL hash (e.g. #settings or #extractor)
   const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
   if (hash === 'settings' || hash === 'extractor') {
     return hash;
   }
-  
+
   // 2. Check URL search param (e.g. ?tab=settings)
   const params = new URLSearchParams(window.location.search);
   const tabParam = params.get('tab');
   if (tabParam === 'settings' || tabParam === 'extractor') {
     return tabParam;
   }
-  
+
   // 3. Check localStorage backup
   try {
     const saved = localStorage.getItem('rtgs_active_tab');
@@ -29,7 +29,7 @@ function getInitialTab() {
   } catch {
     // Ignore storage errors in restricted contexts
   }
-  
+
   return 'extractor';
 }
 
@@ -53,7 +53,7 @@ export default function App() {
     }
     try {
       localStorage.setItem('rtgs_active_tab', initial);
-    } catch {}
+    } catch { }
 
     const onHashChange = () => {
       const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
@@ -61,7 +61,7 @@ export default function App() {
         setActiveTab(hash);
         try {
           localStorage.setItem('rtgs_active_tab', hash);
-        } catch {}
+        } catch { }
       }
     };
 
@@ -71,18 +71,18 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <div className="flex h-full w-full overflow-hidden bg-[#0a0c10] font-sans text-white">
-        
+      <div className="flex h-full w-full overflow-hidden bg-[#191d26] font-sans text-white">
+
         {/* Docked Frosted Glass Sidebar */}
-        <Sidebar 
-          activeTab={activeTab} 
-          setActiveTab={handleTabChange} 
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={handleTabChange}
         />
 
         {/* Main Fullscreen Workspace with Preserved Tab State */}
         <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
           <div className={`h-full w-full flex flex-col min-w-0 overflow-hidden ${activeTab === 'extractor' ? '' : 'hidden'}`}>
-            <ExtractorView 
+            <ExtractorView
               isActive={activeTab === 'extractor'}
               onNavigateToSettings={() => handleTabChange('settings')}
             />

@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { 
-  FileSpreadsheet, 
-  Copy, 
-  Check, 
+import {
+  FileSpreadsheet,
+  Copy,
+  Check,
   Download,
   Layers,
   ArrowUpRight,
@@ -251,7 +251,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
     const txs = results?.send?.transactions;
     if (!txs || txs.length === 0) return [];
     if (!sendSearchLower) return txs;
-    return txs.filter(item => 
+    return txs.filter(item =>
       (item.name && item.name.toLowerCase().includes(sendSearchLower)) ||
       (item.account && item.account.toLowerCase().includes(sendSearchLower)) ||
       (item.short && item.short.toLowerCase().includes(sendSearchLower))
@@ -263,7 +263,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
     const txs = results?.received?.transactions;
     if (!txs || txs.length === 0) return [];
     if (!recvSearchLower) return txs;
-    return txs.filter(item => 
+    return txs.filter(item =>
       (item.name && item.name.toLowerCase().includes(recvSearchLower)) ||
       (item.account && item.account.toLowerCase().includes(recvSearchLower)) ||
       (item.short && item.short.toLowerCase().includes(recvSearchLower))
@@ -271,52 +271,12 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
   }, [results?.received?.transactions, recvSearchLower]);
 
   return (
-    <div className="relative flex-1 w-full h-full overflow-hidden bg-gradient-to-br from-[#0b0d12] via-[#1a1e28] to-[#0c0e14]">
-      {/* 3D Floating Spheres & Frosted Light Orbs Backdrop for Glassmorphism Refraction */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden select-none" aria-hidden="true">
-        {/* Soft upper-left luminous silver aura */}
-        <div className="absolute -top-24 -left-16 w-[420px] h-[420px] rounded-full bg-white/[0.06] blur-3xl" />
-        {/* Floating 3D dark obsidian sphere (left edge) */}
-        <div
-          className="absolute top-[18%] -left-16 w-48 h-48 rounded-full shadow-2xl"
-          style={{
-            background: 'radial-gradient(circle at 32% 28%, #475569 0%, #1e293b 38%, #05070a 85%)',
-            boxShadow: '0 25px 60px rgba(0,0,0,0.85), inset -8px -12px 24px rgba(0,0,0,0.9)',
-          }}
-        />
-        {/* Luminous frosted ring behind center dropzone */}
-        <div className="absolute top-[22%] left-[26%] w-72 h-72 rounded-full border-[28px] border-white/[0.07] blur-xl" />
-        {/* Floating 3D glossy glass sphere (top right) */}
-        <div
-          className="absolute top-8 right-[10%] w-24 h-24 rounded-full rotate-12"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.06) 50%, rgba(0,0,0,0.4) 100%)',
-            border: '1px solid rgba(255,255,255,0.28)',
-            boxShadow: 'inset 0 2px 6px rgba(255,255,255,0.45), 0 18px 40px rgba(0,0,0,0.55)',
-          }}
-        />
-        {/* Floating faceted silver glow orb (right edge) */}
-        <div
-          className="absolute bottom-[14%] right-[4%] w-36 h-36 rounded-full"
-          style={{
-            background: 'radial-gradient(circle at 30% 30%, #f1f5f9 0%, #94a3b8 42%, #334155 88%)',
-            opacity: 0.75,
-            filter: 'blur(0.5px)',
-            boxShadow: '0 24px 60px rgba(0,0,0,0.75)',
-          }}
-        />
-        {/* Bottom-left matte dark sphere */}
-        <div
-          className="absolute -bottom-14 left-[22%] w-36 h-36 rounded-full"
-          style={{
-            background: 'radial-gradient(circle at 35% 30%, #334155 0%, #0f172a 48%, #020408 90%)',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.85)',
-          }}
-        />
-        {/* Soft center-right luminous haze */}
-        <div className="absolute bottom-[18%] right-[24%] w-80 h-80 rounded-full bg-indigo-400/[0.07] blur-3xl" />
-      </div>
-
+    <div
+      className="relative flex-1 w-full h-full overflow-hidden"
+      style={{
+        background: 'radial-gradient(ellipse at 25% 15%, #262b36 0%, #1c2029 48%, #151820 100%)',
+      }}
+    >
       {/* Scrollable Glass Foreground Workspace */}
       <div className="relative z-10 h-full w-full overflow-y-auto p-6 md:p-8 space-y-6">
         {/* Top Header */}
