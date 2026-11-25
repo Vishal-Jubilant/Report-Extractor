@@ -7,7 +7,6 @@ A modern, high-performance Bank Statement Extractor with **FastAPI Backend** and
 ```bash
 python start.py
 ```
-*(Or double click `start.bat` on Windows)*
 
 This single command automatically:
 1. Detects or creates the `.venv` virtual environment.
