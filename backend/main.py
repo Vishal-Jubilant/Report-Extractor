@@ -2,6 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 import io
 import os
+import re
 import socket
 import sys
 import tempfile
@@ -171,6 +172,9 @@ class PrecheckFileItem(BaseModel):
     bank: Optional[str] = None
     account_code: Optional[str] = None
     holder_name: Optional[str] = None
+    in_group: bool = True
+    group_name: Optional[str] = None
+    not_in_group_reason: Optional[str] = None
 
 
 class PrecheckEnterpriseItem(BaseModel):
@@ -185,8 +189,10 @@ class PrecheckEnterpriseItem(BaseModel):
 
 class PrecheckResponse(BaseModel):
     has_missing: bool
+    has_not_in_group: bool = False
     enterprises: List[PrecheckEnterpriseItem]
     files: List[PrecheckFileItem]
+    not_in_group_files: List[PrecheckFileItem] = []
 
 
 class TransactionItem(BaseModel):
@@ -234,6 +240,50 @@ class ExtractResponse(BaseModel):
 # Synchronous Core Worker Routines (Offloaded to worker threadpool)
 # -----------------------------------------------------------------------------
 
+def _norm_identifier(val: Optional[str]) -> str:
+    return re.sub(r"\s+", "", (val or "").upper())
+
+
+def _match_grouped_enterprise(
+    finfo: dict,
+    grouped_enterprises: Dict[str, dict],
+) -> Optional[dict]:
+    """Match an uploaded file against enterprises that belong to configured groups."""
+    f_code = (finfo.get("account_code") or "").strip().upper()
+    f_holder = (finfo.get("holder_name") or "").strip().upper()
+    f_name = (finfo.get("filename") or "").strip().upper()
+    f_code_norm = _norm_identifier(f_code)
+    f_holder_norm = _norm_identifier(f_holder)
+
+    if f_code and f_code != "?":
+        for ent in grouped_enterprises.values():
+            if (
+                f_code == ent["code"]
+                or f_code == ent["name"]
+                or (f_code_norm and f_code_norm == _norm_identifier(ent["name"]))
+            ):
+                return ent
+
+    if f_holder:
+        for ent in grouped_enterprises.values():
+            ent_name_norm = _norm_identifier(ent["name"])
+            if (
+                f_holder == ent["name"]
+                or f_holder == ent["code"]
+                or (f_holder_norm and f_holder_norm == ent_name_norm)
+                or (len(ent_name_norm) >= 4 and ent_name_norm in f_holder_norm)
+            ):
+                return ent
+
+    if not f_holder:
+        for ent in grouped_enterprises.values():
+            tcode = ent["code"]
+            if tcode and re.search(rf"(?<![A-Z0-9]){re.escape(tcode)}(?![A-Z0-9])", f_name):
+                return ent
+
+    return None
+
+
 def _sync_precheck(
     payloads: List[Tuple[str, bytes]],
     selected_enterprise: Optional[str] = None
@@ -241,12 +291,32 @@ def _sync_precheck(
     """CPU-bound statement pre-check executed in worker thread to prevent event loop blocking."""
     _reload_config()
     eb_data = enterprise_banks.load_enterprise_banks()
+    groups_data = enterprise_banks.load_groups()
+
+    grouped_enterprises: Dict[str, dict] = {}
+    for grp in groups_data:
+        grp_name = (grp.get("group_name") or "").strip().upper()
+        if not grp_name:
+            continue
+        for ent in grp.get("enterprises", []):
+            ent_code = (ent.get("code") or "").strip().upper()
+            ent_name = (ent.get("name") or ent_code).strip().upper()
+            ent_banks = [b.strip().upper() for b in ent.get("banks", []) if b.strip()]
+            if ent_code:
+                grouped_enterprises[ent_code] = {
+                    "code": ent_code,
+                    "name": ent_name,
+                    "group_name": grp_name,
+                    "banks": ent_banks,
+                }
 
     uploaded_files_info = []
+    not_in_group_files = []
+    active_groups = set()
     detected_codes = set()
-    detected_banks_overall = set()
+    file_matched_codes: Dict[int, str] = {}
 
-    for fname, file_bytes in payloads:
+    for idx, (fname, file_bytes) in enumerate(payloads):
         stream = io.BytesIO(file_bytes)
         stream.name = fname
 
@@ -258,36 +328,54 @@ def _sync_precheck(
         stream.seek(0)
         code, holder = "?", ""
         if bank:
-            detected_banks_overall.add(bank.upper())
             try:
                 code, holder, _ = identify_account(stream, bank, fname)
-                if code and code != "?":
-                    detected_codes.add(code.upper())
             except Exception:
                 pass
 
-        uploaded_files_info.append({
+        f_bank = (bank or "").strip().upper()
+        finfo = {
             "filename": fname,
             "bank": bank,
             "account_code": code,
             "holder_name": holder,
-        })
+            "in_group": True,
+            "group_name": None,
+            "not_in_group_reason": None,
+        }
 
-    # Step 1: Detect which Groups are active based on uploaded statements
-    active_groups = set()
-    for code in detected_codes:
-        matched = eb_data.get(code)
-        if not matched:
-            for k, v in eb_data.items():
-                if v.get("name", "").strip().upper() == code or k.strip().upper() == code:
-                    matched = v
-                    break
-        if matched and matched.get("group_name"):
-            grp_val = matched["group_name"].strip().upper()
-            if grp_val:
-                active_groups.add(grp_val)
+        matched_ent = _match_grouped_enterprise(finfo, grouped_enterprises) if f_bank else None
 
-    # Step 2: Build target enterprises
+        if not f_bank:
+            finfo["in_group"] = False
+            finfo["not_in_group_reason"] = "Bank could not be detected — not in the group."
+        elif matched_ent is None:
+            finfo["in_group"] = False
+            label = (holder or (code if code and code != "?" else "")).strip()
+            if label:
+                finfo["not_in_group_reason"] = f"'{label}' is not in any configured group."
+            else:
+                finfo["not_in_group_reason"] = "Statement account is not in any configured group."
+        elif matched_ent["banks"] and f_bank not in matched_ent["banks"]:
+            finfo["in_group"] = False
+            finfo["group_name"] = matched_ent["group_name"]
+            finfo["not_in_group_reason"] = (
+                f"{f_bank} statement for {matched_ent['name']} ({matched_ent['code']}) "
+                f"is not configured in group '{matched_ent['group_name']}'."
+            )
+        else:
+            finfo["in_group"] = True
+            finfo["group_name"] = matched_ent["group_name"]
+            active_groups.add(matched_ent["group_name"])
+            detected_codes.add(matched_ent["code"])
+            file_matched_codes[idx] = matched_ent["code"]
+
+        if not finfo["in_group"]:
+            not_in_group_files.append(finfo)
+
+        uploaded_files_info.append(finfo)
+
+    # Step 2: Build target enterprises belonging to the active groups
     sel = (selected_enterprise or "").strip().upper()
     target_codes = []
     seen_codes = set()
@@ -295,17 +383,8 @@ def _sync_precheck(
     if sel and sel not in ("ALL", "AUTO", ""):
         target_codes = [sel]
     else:
-        # Include all enterprises belonging to the active groups of uploaded statements
-        for code, ent_info in eb_data.items():
-            grp = (ent_info.get("group_name") or "").strip().upper()
-            if grp and grp in active_groups:
-                if code not in seen_codes:
-                    target_codes.append(code)
-                    seen_codes.add(code)
-
-        # Include any standalone detected enterprises
-        for code in detected_codes:
-            if code not in seen_codes:
+        for code, ent_info in grouped_enterprises.items():
+            if ent_info["group_name"] in active_groups and code not in seen_codes:
                 target_codes.append(code)
                 seen_codes.add(code)
 
@@ -313,46 +392,28 @@ def _sync_precheck(
     has_missing = False
 
     for tcode in target_codes:
-        ent_info = eb_data.get(tcode)
-        if ent_info:
-            expected_banks = [b.upper() for b in ent_info.get("banks", [])]
-            ent_name = ent_info.get("name", tcode)
-            ent_group = ent_info.get("group_name")
-        else:
-            matched = None
-            for k, v in eb_data.items():
-                if v.get("name", "").upper() == tcode or k.upper() == tcode:
-                    matched = v
-                    break
-            if matched:
-                expected_banks = [b.upper() for b in matched.get("banks", [])]
-                ent_name = matched.get("name", tcode)
-                ent_group = matched.get("group_name")
-                tcode = matched.get("code", tcode)
-            else:
-                expected_banks = []
-                ent_name = tcode
-                ent_group = None
+        ent_info = grouped_enterprises.get(tcode) or eb_data.get(tcode)
+        if not ent_info:
+            continue
 
+        expected_banks = [b.upper() for b in ent_info.get("banks", [])]
+        ent_name = ent_info.get("name", tcode)
+        ent_group = ent_info.get("group_name")
         if not expected_banks:
             continue
 
-        # Find uploaded banks specifically for this enterprise
         uploaded_for_ent = []
-        for finfo in uploaded_files_info:
-            f_code = (finfo.get("account_code") or "").strip().upper()
+        for idx, finfo in enumerate(uploaded_files_info):
+            if not finfo["in_group"]:
+                continue
             f_bank = (finfo.get("bank") or "").strip().upper()
-            f_holder = (finfo.get("holder_name") or "").strip().upper()
-            f_name = (finfo.get("filename") or "").strip().upper()
-
-            matches_ent = (
-                f_code == tcode or
-                f_code == ent_name.upper() or
-                (f_holder and (tcode in f_holder or ent_name.upper() in f_holder)) or
-                (tcode and tcode in f_name)
-            )
-            if matches_ent and f_bank:
+            if file_matched_codes.get(idx) == tcode and f_bank:
                 uploaded_for_ent.append(f_bank)
+            elif sel and sel not in ("ALL", "AUTO", "") and f_bank:
+                f_code = (finfo.get("account_code") or "").strip().upper()
+                f_holder = (finfo.get("holder_name") or "").strip().upper()
+                if f_code == tcode or (f_holder and ent_name.upper() in f_holder):
+                    uploaded_for_ent.append(f_bank)
 
         uploaded_unique = sorted(list(set(uploaded_for_ent)))
         missing = [b for b in expected_banks if b not in uploaded_unique]
@@ -373,8 +434,10 @@ def _sync_precheck(
 
     return {
         "has_missing": has_missing,
+        "has_not_in_group": len(not_in_group_files) > 0,
         "enterprises": enterprise_summaries,
         "files": uploaded_files_info,
+        "not_in_group_files": not_in_group_files,
     }
 
 

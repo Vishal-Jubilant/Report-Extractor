@@ -35,6 +35,23 @@ export default function MissingBanksModal({
     }
   };
 
+  const missingEnterprises = warningData.enterprises || [];
+  const notInGroupFiles = warningData.notInGroupFiles || [];
+  const hasMissing = missingEnterprises.length > 0;
+  const hasNotInGroup = notInGroupFiles.length > 0;
+
+  const modalTitle = hasNotInGroup && hasMissing
+    ? 'Statement Warnings'
+    : hasNotInGroup
+      ? 'Files Not in the Group'
+      : 'Missing Statements';
+
+  const modalDescription = hasNotInGroup && hasMissing
+    ? 'Some uploaded files are not in any configured group, and some required statements are missing:'
+    : hasNotInGroup
+      ? 'The following uploaded file(s) are not in the group:'
+      : 'Some required bank statements have not been uploaded for your group:';
+
   return createPortal(
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-in fade-in duration-150"
@@ -56,10 +73,10 @@ export default function MissingBanksModal({
           </div>
           <div className="flex-1 min-w-0 pr-2">
             <h2 id="missing-banks-modal-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              Missing Statements
+              {modalTitle}
             </h2>
             <p id="missing-banks-modal-description" className="text-xs sm:text-sm text-slate-500 mt-0.5 leading-relaxed">
-              Some required bank statements have not been uploaded for your group:
+              {modalDescription}
             </p>
           </div>
           <button 
@@ -72,9 +89,35 @@ export default function MissingBanksModal({
           </button>
         </div>
 
-        {/* Missing Details Per Enterprise */}
+        {/* Warning Details */}
         <div className="px-6 py-4 space-y-3 max-h-[360px] overflow-y-auto overscroll-contain">
-          {warningData.enterprises.map((ent) => (
+          {hasNotInGroup && (
+            <div className="space-y-2">
+              {notInGroupFiles.map((fileItem) => (
+                <div
+                  key={fileItem.filename}
+                  className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50 space-y-1.5"
+                >
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-slate-900 truncate">
+                      {fileItem.filename}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300 shrink-0">
+                      <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                      Not in the group
+                    </span>
+                  </div>
+                  {fileItem.not_in_group_reason && (
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      {fileItem.not_in_group_reason}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {missingEnterprises.map((ent) => (
             <div 
               key={ent.code} 
               className="p-3.5 rounded-xl border border-slate-200/90 bg-white shadow-2xs space-y-2.5 transition-colors"
@@ -141,7 +184,11 @@ export default function MissingBanksModal({
           <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/70 flex items-start gap-2.5 text-xs text-amber-950">
             <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
             <p className="leading-relaxed">
-              You can return to upload the missing statement files, or proceed anyway.
+              {hasNotInGroup && !hasMissing
+                ? 'You can go back to remove the unlisted file(s) or add them to a group in Settings, or proceed anyway.'
+                : hasNotInGroup && hasMissing
+                  ? 'You can go back to review/remove unlisted files or upload missing statement files, or proceed anyway.'
+                  : 'You can return to upload the missing statement files, or proceed anyway.'}
             </p>
           </div>
         </div>
