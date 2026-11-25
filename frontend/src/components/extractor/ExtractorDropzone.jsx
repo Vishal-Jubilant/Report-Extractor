@@ -6,7 +6,8 @@ import {
   Trash2, 
   Plus, 
   ArrowRight, 
-  RefreshCw 
+  RefreshCw,
+  X
 } from 'lucide-react';
 
 export default function ExtractorDropzone({
@@ -24,20 +25,28 @@ export default function ExtractorDropzone({
   onProceed,
   formatFileSize
 }) {
+  const hasFiles = files.length > 0;
+
   return (
     <div className="space-y-4">
-      {/* Upload Dropzone */}
+      {/* Modern Upload Dropzone */}
       <div 
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
         onClick={onBrowseClick}
-        className={`relative flex flex-col items-center justify-center min-h-[250px] py-12 px-8 rounded-2xl border-2 border-dashed transition-all duration-150 cursor-pointer bg-slate-50/50 ${
+        className={`group relative overflow-hidden flex flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer ${
+          hasFiles ? 'py-7 px-6' : 'min-h-[240px] py-12 px-8'
+        } ${
           isDragging 
-            ? 'border-slate-900 bg-slate-100 scale-[0.995]' 
-            : 'border-slate-300 hover:border-slate-800 hover:bg-white'
+            ? 'border-indigo-500 bg-indigo-50/70 ring-4 ring-indigo-500/10 scale-[0.995]' 
+            : 'border-slate-300/90 bg-white/90 hover:bg-white hover:border-indigo-400 hover:shadow-md hover:shadow-indigo-950/5'
         }`}
       >
+        {/* Subtle ambient accent glow */}
+        <div className="pointer-events-none absolute -top-24 -right-24 w-56 h-56 rounded-full bg-indigo-500/5 blur-2xl group-hover:bg-indigo-500/10 transition-colors" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 w-56 h-56 rounded-full bg-violet-500/5 blur-2xl group-hover:bg-violet-500/10 transition-colors" />
+
         <input 
           ref={fileInputRef}
           type="file" 
@@ -47,56 +56,74 @@ export default function ExtractorDropzone({
           className="hidden" 
         />
 
-        <div className="p-3.5 rounded-2xl bg-white border border-slate-200 text-slate-800 shadow-xs mb-3.5">
-          <UploadCloud className="w-8 h-8" />
+        <div className={`relative flex items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25 transition-transform duration-200 group-hover:scale-105 ${
+          hasFiles ? 'w-11 h-11 mb-3' : 'w-14 h-14 mb-4'
+        }`}>
+          <UploadCloud className={hasFiles ? 'w-5 h-5' : 'w-7 h-7'} />
         </div>
 
-        <p className="text-base sm:text-lg font-semibold text-slate-900 tracking-tight">
-          Drop bank statements here, or <span className="text-slate-900 underline underline-offset-4 font-bold">browse files</span>
-        </p>
-        <p className="text-xs text-slate-500 mt-1.5">
-          Compatible with ICICI, Kotak, Axis, IDBI, and IDFC statements
+        <p className={`relative font-semibold text-slate-900 tracking-tight text-center ${
+          hasFiles ? 'text-sm sm:text-base' : 'text-base sm:text-lg'
+        }`}>
+          Drop bank statements here, or{' '}
+          <span className="text-indigo-600 group-hover:text-indigo-700 underline decoration-indigo-300 underline-offset-4 font-bold">
+            browse files
+          </span>
         </p>
 
-        <div className="flex items-center gap-2 mt-4">
-          {['.PDF', '.CSV', '.XLSX', '.XLS'].map((format) => (
+        {!hasFiles && (
+          <p className="relative text-xs sm:text-sm text-slate-500 mt-1.5 text-center">
+            Supports ICICI, Kotak, Axis, IDBI &amp; IDFC account statements
+          </p>
+        )}
+
+        <div className={`relative flex flex-wrap items-center justify-center gap-2 ${hasFiles ? 'mt-3' : 'mt-5'}`}>
+          {[
+            { ext: 'PDF', dot: 'bg-rose-500' },
+            { ext: 'CSV', dot: 'bg-emerald-500' },
+            { ext: 'XLSX', dot: 'bg-emerald-500' },
+            { ext: 'XLS', dot: 'bg-emerald-500' },
+          ].map((item) => (
             <span 
-              key={format}
-              className="px-2.5 py-0.5 rounded-md text-xs font-mono font-semibold bg-white border border-slate-200 text-slate-700 shadow-2xs"
+              key={item.ext}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold bg-slate-50 border border-slate-200/90 text-slate-600"
             >
-              {format}
+              <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`} />
+              .{item.ext}
             </span>
           ))}
         </div>
       </div>
 
-      {/* Uploaded Files Section & Proceed Button */}
-      {files.length > 0 && (
-        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+      {/* Staged Files Panel & Action Footer */}
+      {hasFiles && (
+        <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
-              <span className="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-900 font-bold text-xs font-mono">
+              <span className="inline-flex items-center justify-center min-w-[26px] h-6 px-2 rounded-lg bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-600/15 font-bold text-xs font-mono">
                 {files.length}
               </span>
-              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-                Uploaded Statements
+              <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Staged Statements
               </h2>
             </div>
-            <div className="flex items-center gap-4">
+
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={onBrowseClick}
-                className="flex items-center gap-1.5 text-sm text-slate-700 hover:text-slate-900 font-semibold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-colors cursor-pointer"
               >
-                <Plus className="w-4 h-4" /> Add More
+                <Plus className="w-3.5 h-3.5 text-indigo-600" />
+                Add More
               </button>
-              <span className="text-slate-300">|</span>
               <button 
                 type="button"
                 onClick={onClearAll}
-                className="text-sm text-rose-600 hover:text-rose-700 flex items-center gap-1.5 font-semibold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
               >
-                <Trash2 className="w-4 h-4" /> Clear All
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear All
               </button>
             </div>
           </div>
@@ -109,10 +136,14 @@ export default function ExtractorDropzone({
               return (
                 <div 
                   key={idx}
-                  className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-white transition-all group"
+                  className="group relative flex items-center justify-between p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 hover:border-indigo-200 hover:bg-white hover:shadow-sm transition-all duration-150"
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-700 shrink-0">
+                    <div className={`p-2.5 rounded-xl border shrink-0 ${
+                      isPdf 
+                        ? 'bg-rose-50 text-rose-600 border-rose-100' 
+                        : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                    }`}>
                       {isPdf ? (
                         <FileText className="w-4 h-4" />
                       ) : (
@@ -123,8 +154,8 @@ export default function ExtractorDropzone({
                       <p className="text-sm font-semibold text-slate-900 truncate" title={file.name}>
                         {file.name}
                       </p>
-                      <p className="text-[12px] text-slate-500 font-mono mt-0.5">
-                        {formatFileSize(file.size)} &bull; <span className="uppercase font-semibold">{ext.replace('.', '')}</span>
+                      <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                        {formatFileSize(file.size)} &bull; <span className="uppercase font-semibold text-slate-600">{ext.replace('.', '')}</span>
                       </p>
                     </div>
                   </div>
@@ -133,38 +164,39 @@ export default function ExtractorDropzone({
                     onClick={(e) => { e.stopPropagation(); onRemoveFile(idx); }}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0 cursor-pointer"
                     title="Remove file"
+                    aria-label={`Remove ${file.name}`}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               );
             })}
           </div>
 
-          {/* Proceed Button Row */}
-          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <span className="text-sm text-slate-600">
-              Ready to parse. Click <strong className="text-slate-900">Proceed</strong> to execute extraction.
-            </span>
+          {/* Proceed Action Bar */}
+          <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-xs sm:text-sm text-slate-500">
+              Statements are staged locally. Click <span className="font-semibold text-slate-800">Proceed</span> to extract &amp; verify.
+            </p>
             <button
               type="button"
               onClick={onProceed}
               disabled={isProcessing}
-              className={`flex items-center justify-center gap-3 px-11 py-3.5 rounded-xl font-bold text-base tracking-wide transition-all shadow-md cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-2.5 px-9 py-3 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all duration-150 cursor-pointer ${
                 isProcessing
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 active:scale-98'
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-lg shadow-indigo-500/25 active:scale-[0.98]'
               }`}
             >
               {isProcessing ? (
                 <>
-                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>Processing...</span>
                 </>
               ) : (
                 <>
                   <span>Proceed</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
