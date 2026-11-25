@@ -241,7 +241,7 @@ class ExtractResponse(BaseModel):
 # -----------------------------------------------------------------------------
 
 def _norm_identifier(val: Optional[str]) -> str:
-    return re.sub(r"\s+", "", (val or "").upper())
+    return re.sub(r"[^A-Z0-9]", "", (val or "").upper())
 
 
 def _match_grouped_enterprise(
@@ -263,6 +263,12 @@ def _match_grouped_enterprise(
                 or (f_code_norm and f_code_norm == _norm_identifier(ent["name"]))
             ):
                 return ent
+        for ac_holder, ac_code in account_codes.HOLDER_TO_CODE.items():
+            if (ac_code or "").strip().upper() == f_code:
+                ac_holder_norm = _norm_identifier(ac_holder)
+                for ent in grouped_enterprises.values():
+                    if ac_holder_norm and ac_holder_norm == _norm_identifier(ent["name"]):
+                        return ent
 
     if f_holder:
         for ent in grouped_enterprises.values():
@@ -271,7 +277,6 @@ def _match_grouped_enterprise(
                 f_holder == ent["name"]
                 or f_holder == ent["code"]
                 or (f_holder_norm and f_holder_norm == ent_name_norm)
-                or (len(ent_name_norm) >= 4 and ent_name_norm in f_holder_norm)
             ):
                 return ent
 
@@ -348,20 +353,20 @@ def _sync_precheck(
 
         if not f_bank:
             finfo["in_group"] = False
-            finfo["not_in_group_reason"] = "Bank could not be detected — not in the group."
+            finfo["not_in_group_reason"] = "Bank could not be detected. This file is not in any group."
         elif matched_ent is None:
             finfo["in_group"] = False
             label = (holder or (code if code and code != "?" else "")).strip()
             if label:
-                finfo["not_in_group_reason"] = f"'{label}' is not in any configured group."
+                finfo["not_in_group_reason"] = f"'{label}' is not in any group."
             else:
-                finfo["not_in_group_reason"] = "Statement account is not in any configured group."
+                finfo["not_in_group_reason"] = "This file is not in any group."
         elif matched_ent["banks"] and f_bank not in matched_ent["banks"]:
             finfo["in_group"] = False
             finfo["group_name"] = matched_ent["group_name"]
             finfo["not_in_group_reason"] = (
                 f"{f_bank} statement for {matched_ent['name']} ({matched_ent['code']}) "
-                f"is not configured in group '{matched_ent['group_name']}'."
+                f"is not in group '{matched_ent['group_name']}'."
             )
         else:
             finfo["in_group"] = True

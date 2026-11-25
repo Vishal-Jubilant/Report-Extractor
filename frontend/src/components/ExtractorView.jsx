@@ -22,8 +22,6 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
   const [selectedEnterprise, setSelectedEnterprise] = useState('ALL');
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [warningData, setWarningData] = useState(null);
-  const [filePrecheckMap, setFilePrecheckMap] = useState({});
-  const [isCheckingGroups, setIsCheckingGroups] = useState(false);
 
   // Filters & State
   const [sendSearch, setSendSearch] = useState('');
@@ -31,7 +29,6 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
   const [copiedSection, setCopiedSection] = useState(null);
 
   const fileInputRef = useRef(null);
-  const warnedNotInGroupRef = useRef(new Set());
 
   // Fetch available enterprises and their required banks
   const fetchEnterprises = useCallback(async () => {
@@ -51,77 +48,6 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
       fetchEnterprises();
     }
   }, [isActive, fetchEnterprises]);
-
-  // Automatically check uploaded files against configured groups right on upload
-  useEffect(() => {
-    const currentNames = new Set(files.map(f => f.name));
-    for (const name of warnedNotInGroupRef.current) {
-      if (!currentNames.has(name)) {
-        warnedNotInGroupRef.current.delete(name);
-      }
-    }
-
-    if (files.length === 0) {
-      setFilePrecheckMap({});
-      setIsCheckingGroups(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    const checkUploadedFiles = async () => {
-      setIsCheckingGroups(true);
-      try {
-        const formData = new FormData();
-        files.forEach(file => {
-          formData.append('files', file);
-        });
-        if (selectedEnterprise && selectedEnterprise !== 'ALL') {
-          formData.append('selected_enterprise', selectedEnterprise);
-        }
-
-        const res = await fetch('/api/precheck', {
-          method: 'POST',
-          body: formData,
-          signal: controller.signal,
-        });
-
-        if (!res.ok) return;
-        const preData = await res.json();
-        const nextMap = {};
-        const newlyFlagged = [];
-
-        (preData.files || []).forEach(item => {
-          nextMap[item.filename] = item;
-          if (item.in_group === false && !warnedNotInGroupRef.current.has(item.filename)) {
-            warnedNotInGroupRef.current.add(item.filename);
-            newlyFlagged.push(item);
-          }
-        });
-
-        setFilePrecheckMap(nextMap);
-
-        if (newlyFlagged.length === 1) {
-          notifyFn(`Warning: "${newlyFlagged[0].filename}" is not in the group.`, 'warning');
-        } else if (newlyFlagged.length > 1) {
-          notifyFn(
-            `Warning: ${newlyFlagged.length} uploaded files are not in the group (${newlyFlagged.map(f => f.filename).join(', ')}).`,
-            'warning'
-          );
-        }
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          console.warn('Upload group check error:', err);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsCheckingGroups(false);
-        }
-      }
-    };
-
-    checkUploadedFiles();
-    return () => controller.abort();
-  }, [files, selectedEnterprise, notifyFn]);
 
   // File Upload Handlers
   const addFiles = useCallback((newFiles) => {
@@ -327,8 +253,6 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
       {/* Upload Dropzone & File Management */}
       <ExtractorDropzone
         files={files}
-        filePrecheckMap={filePrecheckMap}
-        isCheckingGroups={isCheckingGroups}
         isDragging={isDragging}
         isProcessing={isProcessing}
         fileInputRef={fileInputRef}

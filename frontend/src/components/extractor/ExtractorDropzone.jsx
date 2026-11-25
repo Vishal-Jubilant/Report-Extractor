@@ -6,14 +6,11 @@ import {
   Trash2, 
   Plus, 
   ArrowRight, 
-  RefreshCw,
-  AlertTriangle
+  RefreshCw 
 } from 'lucide-react';
 
 export default function ExtractorDropzone({
   files = [],
-  filePrecheckMap = {},
-  isCheckingGroups = false,
   isDragging = false,
   isProcessing = false,
   fileInputRef,
@@ -27,7 +24,6 @@ export default function ExtractorDropzone({
   onProceed,
   formatFileSize
 }) {
-  const notInGroupFiles = files.filter(f => filePrecheckMap[f.name]?.in_group === false);
   return (
     <div className="space-y-4">
       {/* Modern Upload Dropzone Card */}
@@ -123,45 +119,19 @@ export default function ExtractorDropzone({
             </div>
           </div>
 
-          {/* Group Warning Banner if any uploaded file is not in a configured group */}
-          {notInGroupFiles.length > 0 && (
-            <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-              <div className="text-xs leading-relaxed">
-                <span className="font-bold">Warning: Not in the group</span> —{' '}
-                {notInGroupFiles.length === 1
-                  ? `"${notInGroupFiles[0].name}" is not in any configured group.`
-                  : `${notInGroupFiles.length} files are not in any configured group.`}{' '}
-                Please review or remove flagged files before proceeding.
-              </div>
-            </div>
-          )}
-
           {/* Files Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {files.map((file, idx) => {
               const ext = '.' + file.name.split('.').pop().toLowerCase();
               const isPdf = ext === '.pdf';
-              const preInfo = filePrecheckMap[file.name];
-              const isNotInGroup = preInfo && preInfo.in_group === false;
               return (
                 <div 
                   key={idx}
-                  className={`flex items-center justify-between p-3.5 rounded-xl border transition-all group ${
-                    isNotInGroup
-                      ? 'bg-amber-50/70 border-amber-300 hover:border-amber-400 hover:bg-amber-50'
-                      : 'bg-slate-50 border-slate-200 hover:border-slate-300 hover:bg-white'
-                  }`}
+                  className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 hover:bg-white transition-all group"
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <div className={`p-2 rounded-lg border shrink-0 ${
-                      isNotInGroup
-                        ? 'bg-amber-100/80 border-amber-300 text-amber-700'
-                        : 'bg-white border-slate-200 text-slate-700'
-                    }`}>
-                      {isNotInGroup ? (
-                        <AlertTriangle className="w-4 h-4" />
-                      ) : isPdf ? (
+                    <div className="p-2 rounded-lg bg-white border border-slate-200 text-slate-700 shrink-0">
+                      {isPdf ? (
                         <FileText className="w-4 h-4" />
                       ) : (
                         <FileSpreadsheet className="w-4 h-4" />
@@ -174,14 +144,6 @@ export default function ExtractorDropzone({
                       <p className="text-[12px] text-slate-500 font-mono mt-0.5">
                         {formatFileSize(file.size)} &bull; <span className="uppercase font-semibold">{ext.replace('.', '')}</span>
                       </p>
-                      {isNotInGroup && (
-                        <p
-                          className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300"
-                          title={preInfo.not_in_group_reason || 'Not in the group'}
-                        >
-                          Not in the group
-                        </p>
-                      )}
                     </div>
                   </div>
                   <button 
@@ -200,11 +162,7 @@ export default function ExtractorDropzone({
           {/* Proceed Button Row */}
           <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <span className="text-sm text-slate-600">
-              {isCheckingGroups
-                ? 'Checking group membership...'
-                : 'Ready to parse. Click '}
-              {!isCheckingGroups && <strong className="text-slate-900">Proceed</strong>}
-              {!isCheckingGroups && ' to execute extraction.'}
+              Ready to parse. Click <strong className="text-slate-900">Proceed</strong> to execute extraction.
             </span>
             <button
               type="button"

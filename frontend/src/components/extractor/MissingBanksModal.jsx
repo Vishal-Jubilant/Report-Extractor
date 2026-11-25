@@ -43,13 +43,15 @@ export default function MissingBanksModal({
   const modalTitle = hasNotInGroup && hasMissing
     ? 'Statement Warnings'
     : hasNotInGroup
-      ? 'Files Not in the Group'
+      ? 'Not in Any Group'
       : 'Missing Statements';
 
   const modalDescription = hasNotInGroup && hasMissing
-    ? 'Some uploaded files are not in any configured group, and some required statements are missing:'
+    ? 'Some uploaded files are not in any group, and some required statements are missing:'
     : hasNotInGroup
-      ? 'The following uploaded file(s) are not in the group:'
+      ? (notInGroupFiles.length === 1
+          ? 'This uploaded file is not in any group:'
+          : 'The following uploaded files are not in any group:')
       : 'Some required bank statements have not been uploaded for your group:';
 
   return createPortal(
@@ -104,7 +106,7 @@ export default function MissingBanksModal({
                     </span>
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300 shrink-0">
                       <AlertTriangle className="w-3 h-3" aria-hidden="true" />
-                      Not in the group
+                      Not in any group
                     </span>
                   </div>
                   {fileItem.not_in_group_reason && (
@@ -185,9 +187,9 @@ export default function MissingBanksModal({
             <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
             <p className="leading-relaxed">
               {hasNotInGroup && !hasMissing
-                ? 'You can go back to remove the unlisted file(s) or add them to a group in Settings, or proceed anyway.'
+                ? 'This file is not in any group. You can go back to remove it, add it to a group in Settings, or proceed anyway.'
                 : hasNotInGroup && hasMissing
-                  ? 'You can go back to review/remove unlisted files or upload missing statement files, or proceed anyway.'
+                  ? 'You can go back to remove unlisted files or upload missing statement files, or proceed anyway.'
                   : 'You can return to upload the missing statement files, or proceed anyway.'}
             </p>
           </div>
