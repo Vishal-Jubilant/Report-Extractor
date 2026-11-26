@@ -239,6 +239,7 @@ class FileSummaryItem(BaseModel):
 class ExtractResponse(BaseModel):
     send: TransactionGroup
     received: TransactionGroup
+    returns: TransactionGroup
     combined_text: str
     files: List[FileSummaryItem]
 
@@ -487,6 +488,38 @@ def _format_party_name(name: str) -> str:
     return " ".join(formatted)
 
 
+def _build_transaction_group(df: pd.DataFrame) -> dict:
+    """Format a filtered DataFrame slice into a TransactionGroup response payload."""
+    items = []
+    total_sum = 0.0
+    if not df.empty:
+        for i, r in enumerate(df.itertuples(), 1):
+            amount_val = to_float(r.Amount)
+            total_sum += amount_val
+            formatted_name = _format_party_name(r.Name)
+            items.append({
+                "index": i,
+                "account": r.Account,
+                "bank": r.Bank,
+                "name": formatted_name,
+                "raw_name": getattr(r, "Raw Name", r.Name),
+                "amount": r.Amount,
+                "amount_num": amount_val,
+                "short": r.Short,
+                "type": r.Type,
+                "status": r.Status,
+                "file": r.File,
+                "line_text": f"{i}.{r.Account} - {formatted_name} - {r.Short}",
+            })
+    return {
+        "transactions": items,
+        "count": len(items),
+        "total_formatted": indian_format(total_sum),
+        "total_num": total_sum,
+        "text": "\n".join(item["line_text"] for item in items),
+    }
+
+
 def _sync_extract(payloads: List[Tuple[str, bytes]]) -> dict:
     """CPU-bound PDF and tabular extraction executed in worker thread to prevent event loop blocking."""
     _reload_config()
@@ -554,84 +587,32 @@ def _sync_extract(payloads: List[Tuple[str, bytes]]) -> dict:
             "total_rows_found": len(df),
         })
 
-    send_list = []
-    received_list = []
-    send_formatted_lines = ""
-    received_formatted_lines = ""
-    send_total_sum = 0.0
-    received_total_sum = 0.0
-
     if frames:
         alldf = pd.concat(frames, ignore_index=True)
         alldf["_o"] = alldf["Account"].map(account_sort_key)
         alldf = alldf.sort_values("_o", kind="stable").drop(columns="_o")
 
-        send_df = alldf[alldf.Type == "Dr"].reset_index(drop=True)
-        recv_df = alldf[alldf.Type == "Cr"].reset_index(drop=True)
+        send_group = _build_transaction_group(alldf[alldf.Type == "Dr"].reset_index(drop=True))
+        recv_group = _build_transaction_group(alldf[alldf.Type == "Cr"].reset_index(drop=True))
+        return_group = _build_transaction_group(alldf[alldf.Type == "Return"].reset_index(drop=True))
+    else:
+        empty_df = pd.DataFrame()
+        send_group = _build_transaction_group(empty_df)
+        recv_group = _build_transaction_group(empty_df)
+        return_group = _build_transaction_group(empty_df)
 
-        for i, r in enumerate(send_df.itertuples(), 1):
-            amount_val = to_float(r.Amount)
-            send_total_sum += amount_val
-            formatted_name = _format_party_name(r.Name)
-            send_list.append({
-                "index": i,
-                "account": r.Account,
-                "bank": r.Bank,
-                "name": formatted_name,
-                "raw_name": getattr(r, "Raw Name", r.Name),
-                "amount": r.Amount,
-                "amount_num": amount_val,
-                "short": r.Short,
-                "type": r.Type,
-                "status": r.Status,
-                "file": r.File,
-                "line_text": f"{i}.{r.Account} - {formatted_name} - {r.Short}",
-            })
-
-        for i, r in enumerate(recv_df.itertuples(), 1):
-            amount_val = to_float(r.Amount)
-            received_total_sum += amount_val
-            formatted_name = _format_party_name(r.Name)
-            received_list.append({
-                "index": i,
-                "account": r.Account,
-                "bank": r.Bank,
-                "name": formatted_name,
-                "raw_name": getattr(r, "Raw Name", r.Name),
-                "amount": r.Amount,
-                "amount_num": amount_val,
-                "short": r.Short,
-                "type": r.Type,
-                "status": r.Status,
-                "file": r.File,
-                "line_text": f"{i}.{r.Account} - {formatted_name} - {r.Short}",
-            })
-
-        send_formatted_lines = "\n".join(item["line_text"] for item in send_list)
-        received_formatted_lines = "\n".join(item["line_text"] for item in received_list)
+    combined_sections = [
+        f"Yesterday Send Transaction\n\n{send_group['text']}",
+        f"Yesterday Received Transaction\n\n{recv_group['text']}",
+    ]
+    if return_group["text"]:
+        combined_sections.append(f"Yesterday Cheque Return\n\n{return_group['text']}")
 
     return {
-        "send": {
-            "transactions": send_list,
-            "count": len(send_list),
-            "total_formatted": indian_format(send_total_sum),
-            "total_num": send_total_sum,
-            "text": send_formatted_lines,
-        },
-        "received": {
-            "transactions": received_list,
-            "count": len(received_list),
-            "total_formatted": indian_format(received_total_sum),
-            "total_num": received_total_sum,
-            "text": received_formatted_lines,
-        },
-        "combined_text": (
-            "Yesterday Send Transaction\n\n"
-            + send_formatted_lines
-            + "\n\nYesterday Received Transaction\n\n"
-            + received_formatted_lines
-            + "\n"
-        ),
+        "send": send_group,
+        "received": recv_group,
+        "returns": return_group,
+        "combined_text": "\n\n".join(combined_sections) + "\n",
         "files": file_summaries,
     }
 

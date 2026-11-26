@@ -95,3 +95,8 @@ BANK_PATTERNS = {
 
     # "HDFC": [ r"(?i)^...(.+?)..." ],
 }
+
+# Cheque / outward return patterns (e.g. "O/W RTN:4521:FUNDS INSUFFICIENT")
+RETURN_PATTERNS = [
+    r"(?i)^(?:O|I)/W\s*RTN\s*:\s*\d+\s*:\s*(.+?)\s*$",
+]

@@ -21,6 +21,7 @@ function TransactionCard({
   dotClass,
   badgeClass,
   amountClass,
+  cardClass = '',
   totalCount,
   totalFormatted,
   transactions,
@@ -28,10 +29,11 @@ function TransactionCard({
   onSearchChange,
   isCopied,
   onCopy,
+  copyTitle,
   emptyLabel
 }) {
   return (
-    <div className="flex flex-col rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+    <div className={`flex flex-col rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden ${cardClass}`}>
       {/* Card Header */}
       <div className="p-3.5 2xl:p-4 border-b border-slate-200 bg-slate-50/50">
         <div className="flex items-center justify-between gap-2.5">
@@ -56,7 +58,7 @@ function TransactionCard({
             type="button"
             onClick={onCopy}
             className="flex items-center justify-center p-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm cursor-pointer active:scale-95 shrink-0"
-            title={`Copy Yesterday ${title} Transaction list`}
+            title={copyTitle || `Copy Yesterday ${title} Transaction list`}
             aria-label={`Copy ${title} List`}
           >
             {isCopied ? (
@@ -129,8 +131,11 @@ export default function TransactionPanel({
   onSendSearchChange,
   recvSearch,
   onRecvSearchChange,
+  returnSearch = '',
+  onReturnSearchChange,
   filteredSend = [],
   filteredRecv = [],
+  filteredReturn = [],
   copiedSection,
   onCopySection
 }) {
@@ -138,8 +143,8 @@ export default function TransactionPanel({
 
   return (
     <div className="space-y-6">
-      {/* Dual Panel Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {/* Three-Panel Responsive Grid: Send, Received, Return */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 xl:gap-5">
         <TransactionCard
           sectionKey="send"
           title="Send"
@@ -180,6 +185,29 @@ export default function TransactionPanel({
             'Received List'
           )}
           emptyLabel="No credit transactions"
+        />
+
+        <TransactionCard
+          sectionKey="returns"
+          title="Return"
+          badge="Rtn"
+          dotClass="bg-violet-500"
+          badgeClass="bg-violet-50 text-violet-700 border-violet-200"
+          amountClass="bg-violet-50 text-violet-700 border-violet-200/80"
+          cardClass="lg:col-span-2 xl:col-span-1"
+          totalCount={results.returns?.count || 0}
+          totalFormatted={results.returns?.total_formatted || '0'}
+          transactions={filteredReturn}
+          searchValue={returnSearch}
+          onSearchChange={onReturnSearchChange}
+          isCopied={copiedSection === 'returns'}
+          onCopy={() => onCopySection(
+            buildCopyText('Yesterday Cheque Return', returnSearch, filteredReturn, results.returns),
+            'returns',
+            'Return List'
+          )}
+          copyTitle="Copy Yesterday Cheque Return list"
+          emptyLabel="No cheque return transactions"
         />
       </div>
     </div>

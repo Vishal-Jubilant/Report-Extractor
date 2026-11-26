@@ -6,7 +6,9 @@ import {
   Trash2, 
   Plus, 
   ArrowRight, 
-  RefreshCw 
+  RefreshCw,
+  Copy,
+  Check
 } from 'lucide-react';
 
 export default function ExtractorDropzone({
@@ -22,6 +24,9 @@ export default function ExtractorDropzone({
   onRemoveFile,
   onClearAll,
   onProceed,
+  canCopyAll = false,
+  isCopiedAll = false,
+  onCopyAll,
   formatFileSize
 }) {
   return (
@@ -168,28 +173,47 @@ export default function ExtractorDropzone({
             <span className="text-xs xl:text-sm text-slate-600">
               Ready to parse. Click <strong className="text-slate-900">Proceed</strong> to execute extraction.
             </span>
-            <button
-              type="button"
-              onClick={onProceed}
-              disabled={isProcessing}
-              className={`flex items-center justify-center gap-2 px-5 py-2 2xl:px-6 2xl:py-2.5 rounded-xl font-semibold text-xs sm:text-sm tracking-wide transition-all shadow-sm cursor-pointer ${
-                isProcessing
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                  : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 active:scale-98'
-              }`}
-            >
-              {isProcessing ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <>
-                  <span>Proceed</span>
-                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </>
-              )}
-            </button>
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={onCopyAll}
+                disabled={!canCopyAll}
+                className={`flex items-center justify-center gap-1.5 px-3 py-1.5 2xl:px-3.5 2xl:py-2 rounded-lg text-[11px] sm:text-xs font-semibold border transition-all ${
+                  canCopyAll
+                    ? 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm cursor-pointer active:scale-98'
+                    : 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-75'
+                }`}
+              >
+                {isCopiedAll ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                ) : (
+                  <Copy className={`w-3.5 h-3.5 ${canCopyAll ? 'text-slate-500' : 'text-slate-400'}`} />
+                )}
+                <span>Copy All Text</span>
+              </button>
+              <button
+                type="button"
+                onClick={onProceed}
+                disabled={isProcessing}
+                className={`flex items-center justify-center gap-2 px-5 py-2 2xl:px-6 2xl:py-2.5 rounded-xl font-semibold text-xs sm:text-sm tracking-wide transition-all shadow-sm cursor-pointer ${
+                  isProcessing
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 active:scale-98'
+                }`}
+              >
+                {isProcessing ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Proceed</span>
+                    <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

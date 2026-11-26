@@ -225,6 +225,16 @@ def _pdf_rows(pdf_file, layout, holder):
                     yield desc, ref, row[layout["dr_col"]], row[layout["cr_col"]]
 
 
+def extract_return_reason(text: str):
+    """Return the return reason if description matches a cheque return pattern (e.g. O/W RTN:4521:FUNDS INSUFFICIENT)."""
+    for pat in getattr(regex_patterns, "RETURN_PATTERNS", []):
+        m = re.search(pat, text or "")
+        if m:
+            reason = m.group(1).strip(" -:/")
+            return re.sub(r"\s+", " ", reason)
+    return None
+
+
 def extract_transactions(pdf_file, bank: str, code: str, holder: str = None):
     _reload_config()
     layout = bank_layouts.BANK_LAYOUTS[bank]
@@ -242,6 +252,19 @@ def extract_transactions(pdf_file, bank: str, code: str, holder: str = None):
 
     rows = []
     for desc, ref, wd, dep in source:
+        return_reason = extract_return_reason(desc)
+        if return_reason is not None:
+            amt, _ = get_amount(wd, dep)
+            if not amt:
+                continue
+            name, mapped = correct_name(return_reason, code)
+            rows.append({
+                "Account": code, "Bank": bank, "Name": name, "Raw Name": return_reason,
+                "Amount": amt, "Short": short_amount(amt), "Type": "Return",
+                "Status": "OK" if mapped else "RETURN",
+            })
+            continue
+
         # Condition: DESCRIPTION start match or CHQ/REF start match
         if not (start_re.search(desc) or (ref_re and ref_re.search(ref))):
             continue

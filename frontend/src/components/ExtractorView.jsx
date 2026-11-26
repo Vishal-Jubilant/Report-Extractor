@@ -1,8 +1,4 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { 
-  Copy, 
-  Check 
-} from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import ExtractorDropzone from './extractor/ExtractorDropzone';
 import MissingBanksModal from './extractor/MissingBanksModal';
@@ -26,6 +22,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
   // Filters & State
   const [sendSearch, setSendSearch] = useState('');
   const [recvSearch, setRecvSearch] = useState('');
+  const [returnSearch, setReturnSearch] = useState('');
   const [copiedSection, setCopiedSection] = useState(null);
 
   const fileInputRef = useRef(null);
@@ -94,11 +91,20 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
 
   const removeFile = (index) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+    setResults(null);
+    setSendSearch('');
+    setRecvSearch('');
+    setReturnSearch('');
+    setCopiedSection(null);
   };
 
   const clearAll = () => {
     setFiles([]);
     setResults(null);
+    setSendSearch('');
+    setRecvSearch('');
+    setReturnSearch('');
+    setCopiedSection(null);
   };
 
   const formatFileSize = (bytes) => {
@@ -233,29 +239,31 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
   };
 
   // Optimized Memoized Transaction Filtering
-  const sendSearchLower = sendSearch.trim().toLowerCase();
-  const filteredSend = useMemo(() => {
-    const txs = results?.send?.transactions;
+  const filterTransactions = useCallback((txs, search) => {
     if (!txs || txs.length === 0) return [];
-    if (!sendSearchLower) return txs;
-    return txs.filter(item => 
-      (item.name && item.name.toLowerCase().includes(sendSearchLower)) ||
-      (item.account && item.account.toLowerCase().includes(sendSearchLower)) ||
-      (item.short && item.short.toLowerCase().includes(sendSearchLower))
+    const query = search.trim().toLowerCase();
+    if (!query) return txs;
+    return txs.filter(item =>
+      (item.name && item.name.toLowerCase().includes(query)) ||
+      (item.account && item.account.toLowerCase().includes(query)) ||
+      (item.short && item.short.toLowerCase().includes(query))
     );
-  }, [results?.send?.transactions, sendSearchLower]);
+  }, []);
 
-  const recvSearchLower = recvSearch.trim().toLowerCase();
-  const filteredRecv = useMemo(() => {
-    const txs = results?.received?.transactions;
-    if (!txs || txs.length === 0) return [];
-    if (!recvSearchLower) return txs;
-    return txs.filter(item => 
-      (item.name && item.name.toLowerCase().includes(recvSearchLower)) ||
-      (item.account && item.account.toLowerCase().includes(recvSearchLower)) ||
-      (item.short && item.short.toLowerCase().includes(recvSearchLower))
-    );
-  }, [results?.received?.transactions, recvSearchLower]);
+  const filteredSend = useMemo(
+    () => filterTransactions(results?.send?.transactions, sendSearch),
+    [results?.send?.transactions, sendSearch, filterTransactions]
+  );
+
+  const filteredRecv = useMemo(
+    () => filterTransactions(results?.received?.transactions, recvSearch),
+    [results?.received?.transactions, recvSearch, filterTransactions]
+  );
+
+  const filteredReturn = useMemo(
+    () => filterTransactions(results?.returns?.transactions, returnSearch),
+    [results?.returns?.transactions, returnSearch, filterTransactions]
+  );
 
   return (
     <div className="flex-1 p-4 sm:p-5 lg:p-6 2xl:p-8 space-y-4 lg:space-y-5 2xl:space-y-6 w-full h-full overflow-y-auto">
@@ -270,19 +278,6 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
             Parse bank statements. Automatically identifies holder name and maps to account codes.
           </p>
         </div>
-
-        {results && (
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => copyToClipboard(results.combined_text, 'combined', 'Combined List')}
-              className="flex items-center gap-2 px-3 py-1.5 xl:px-3.5 xl:py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all shadow-sm cursor-pointer"
-            >
-              {copiedSection === 'combined' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
-              Copy All Text
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Upload Dropzone & File Management */}
@@ -299,10 +294,13 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
         onRemoveFile={removeFile}
         onClearAll={clearAll}
         onProceed={handleProceedClick}
+        canCopyAll={Boolean(results?.combined_text) && !isProcessing}
+        isCopiedAll={copiedSection === 'combined'}
+        onCopyAll={() => copyToClipboard(results?.combined_text, 'combined', 'Combined List')}
         formatFileSize={formatFileSize}
       />
 
-      {/* Output Dual Split View: Send vs Received */}
+      {/* Output Split View: Send, Received & Return */}
       {results && (
         <TransactionPanel
           results={results}
@@ -310,8 +308,11 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
           onSendSearchChange={setSendSearch}
           recvSearch={recvSearch}
           onRecvSearchChange={setRecvSearch}
+          returnSearch={returnSearch}
+          onReturnSearchChange={setReturnSearch}
           filteredSend={filteredSend}
           filteredRecv={filteredRecv}
+          filteredReturn={filteredReturn}
           copiedSection={copiedSection}
           onCopySection={copyToClipboard}
         />
