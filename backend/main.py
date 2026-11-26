@@ -64,18 +64,24 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Security: Specific local origins + LAN IP + regex for any local dev port
+# Security: Specific local origins + LAN IP (HTTP/HTTPS) + regex for any local dev port
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:4500",
+        "https://localhost:4500",
         "http://127.0.0.1:4500",
+        "https://127.0.0.1:4500",
         "http://localhost:4501",
+        "https://localhost:4501",
         "http://127.0.0.1:4501",
+        "https://127.0.0.1:4501",
         f"http://{LOCAL_IP}:4500",
+        f"https://{LOCAL_IP}:4500",
         f"http://{LOCAL_IP}:4501",
+        f"https://{LOCAL_IP}:4501",
     ],
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?",
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

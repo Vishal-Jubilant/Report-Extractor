@@ -37,6 +37,7 @@ desktop.ini
 # Environment & Credentials
 .env.*
 frontend/.env.local
+certs/
 
 # Backups & Temp
 *.bak

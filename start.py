@@ -24,6 +24,7 @@ LOCAL_IP = _get_local_ip()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 VENV_DIR = os.path.join(BASE_DIR, ".venv")
+CERTS_DIR = os.path.join(BASE_DIR, "certs")
 _BACKEND_ENV = os.path.join(BASE_DIR, "backend", ".env")
 _ROOT_ENV = os.path.join(BASE_DIR, ".env")
 ENV_FILE = _BACKEND_ENV if os.path.exists(_BACKEND_ENV) else _ROOT_ENV
@@ -47,6 +48,7 @@ REQUIRED_MODULES = [
     "pdfplumber",
     "openpyxl",
     "reportlab",
+    "cryptography",
 ]
 
 
@@ -334,18 +336,100 @@ def _ensure_frontend_deps():
         print("  [OK] Frontend node_modules verified.")
 
 
+def _ensure_ssl_certs(local_ip: str) -> tuple[str, str]:
+    """Generate (or reuse) a self-signed TLS certificate for localhost, 127.0.0.1, and local_ip."""
+    from datetime import datetime, timedelta, timezone
+    import ipaddress
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.x509.oid import NameOID
+
+    os.makedirs(CERTS_DIR, exist_ok=True)
+    cert_path = os.path.join(CERTS_DIR, "cert.pem")
+    key_path = os.path.join(CERTS_DIR, "key.pem")
+
+    if os.path.exists(cert_path) and os.path.exists(key_path):
+        try:
+            with open(cert_path, "rb") as f:
+                existing = x509.load_pem_x509_certificate(f.read())
+            san = existing.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+            ip_strs = {str(ip) for ip in san.get_values_for_type(x509.IPAddress)}
+            dns_strs = set(san.get_values_for_type(x509.DNSName))
+            now_utc = datetime.now(timezone.utc)
+            expiry = getattr(existing, "not_valid_after_utc", None) or existing.not_valid_after.replace(tzinfo=timezone.utc)
+            if (
+                "localhost" in dns_strs
+                and "127.0.0.1" in ip_strs
+                and local_ip in ip_strs
+                and expiry > now_utc + timedelta(days=7)
+            ):
+                return cert_path, key_path
+        except Exception:
+            pass
+
+    print(f"  -> Generating self-signed HTTPS certificate for localhost & {local_ip}...")
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    subject = issuer = x509.Name([
+        x509.NameAttribute(NameOID.COMMON_NAME, local_ip),
+        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "RTGS TransactFlow"),
+    ])
+
+    san_entries = [
+        x509.DNSName("localhost"),
+        x509.IPAddress(ipaddress.ip_address("127.0.0.1")),
+    ]
+    try:
+        parsed_ip = ipaddress.ip_address(local_ip)
+        if local_ip != "127.0.0.1":
+            san_entries.append(x509.IPAddress(parsed_ip))
+    except ValueError:
+        pass
+
+    now_utc = datetime.now(timezone.utc)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now_utc - timedelta(minutes=5))
+        .not_valid_after(now_utc + timedelta(days=825))
+        .add_extension(x509.SubjectAlternativeName(san_entries), critical=False)
+        .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+        .sign(key, hashes.SHA256())
+    )
+
+    with open(key_path, "wb") as f:
+        f.write(
+            key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+        )
+    with open(cert_path, "wb") as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
+
+    print(f"  [OK] HTTPS certificate ready at {CERTS_DIR}")
+    return cert_path, key_path
+
+
 def step5_start_servers():
     """
     STEP 5: Starting Backend & Frontend Servers.
-    Starts FastAPI on 127.0.0.1:4501 and Vite React UI on localhost:4500.
+    Starts FastAPI (HTTPS) on 0.0.0.0:4501 and Vite React UI (HTTPS) on 0.0.0.0:4500.
     """
-    print("\n[STEP 5/5] Starting Backend & Frontend Servers...")
+    print("\n[STEP 5/5] Starting Backend & Frontend Servers (HTTPS)...")
     try:
         _ensure_frontend_deps()
     except Exception as exc:
         print(f"  [WARN] Notice on npm setup: {exc}")
 
-    print(f"  -> Starting FastAPI Backend on http://{LOCAL_IP}:4501 (also 127.0.0.1:4501)...")
+    cert_path, key_path = _ensure_ssl_certs(LOCAL_IP)
+
+    print(f"  -> Starting FastAPI Backend on https://{LOCAL_IP}:4501 (also https://127.0.0.1:4501)...")
     backend_cmd = [
         sys.executable,
         "-m",
@@ -355,6 +439,10 @@ def step5_start_servers():
         "0.0.0.0",
         "--port",
         "4501",
+        "--ssl-keyfile",
+        key_path,
+        "--ssl-certfile",
+        cert_path,
         "--reload",
     ]
     backend_process = subprocess.Popen(
@@ -365,25 +453,32 @@ def step5_start_servers():
 
     # Wait for backend to be ready before starting frontend (avoids ECONNREFUSED race)
     print("  -> Waiting for backend to be ready...", end="", flush=True)
+    import ssl
     import urllib.request
+    ssl_ctx = ssl._create_unverified_context()
     backend_ready = False
     for _ in range(20):  # up to 10 seconds
         time.sleep(0.5)
         try:
-            urllib.request.urlopen("http://127.0.0.1:4501/docs", timeout=1)
+            urllib.request.urlopen("https://127.0.0.1:4501/docs", timeout=1, context=ssl_ctx)
             backend_ready = True
             break
         except Exception:
             print(".", end="", flush=True)
     print(" OK" if backend_ready else " (timeout, starting frontend anyway)")
 
-    print(f"  -> Starting React + Tailwind UI on http://{LOCAL_IP}:4500...")
-    # Write the backend IP into frontend/.env.local so Vite proxy knows where to forward
+    print(f"  -> Starting React + Tailwind UI on https://{LOCAL_IP}:4500...")
+    # Write the backend IP and SSL paths into frontend/.env.local so Vite serves HTTPS and proxies cleanly
     env_local_path = os.path.join(FRONTEND_DIR, ".env.local")
+    cert_env_path = cert_path.replace("\\", "/")
+    key_env_path = key_path.replace("\\", "/")
     with open(env_local_path, "w") as f:
         f.write(f"VITE_BACKEND_HOST={LOCAL_IP}\n")
         f.write("VITE_BACKEND_PORT=4501\n")
         f.write("VITE_FRONTEND_PORT=4500\n")
+        f.write("VITE_USE_HTTPS=true\n")
+        f.write(f"VITE_SSL_CERT={cert_env_path}\n")
+        f.write(f"VITE_SSL_KEY={key_env_path}\n")
     frontend_cmd = f"{NPM_CMD} run dev"
     frontend_process = subprocess.Popen(
         frontend_cmd,
@@ -393,9 +488,11 @@ def step5_start_servers():
     )
 
     print("\n" + "-" * 68)
-    print("  App is running!")
-    print(f"  Frontend UI:  http://{LOCAL_IP}:4500  (also http://localhost:4500)")
-    print(f"  Backend API:  http://{LOCAL_IP}:4501/docs  (also http://127.0.0.1:4501/docs)")
+    print("  App is running over HTTPS!")
+    print(f"  Frontend UI:  https://{LOCAL_IP}:4500  (also https://localhost:4500)")
+    print(f"  Backend API:  https://{LOCAL_IP}:4501/docs  (also https://127.0.0.1:4501/docs)")
+    print("  Note: If the browser warns about the local self-signed certificate,")
+    print("        click Advanced -> Proceed to open safely on your LAN.")
     print("  Press Ctrl+C in this terminal to stop both servers.")
     print("-" * 68 + "\n")
 
