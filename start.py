@@ -101,7 +101,7 @@ def step1_setup_and_activate_venv():
             os.environ["PATH"] = VENV_BIN_DIR + os.pathsep + os.environ.get("PATH", "")
         return
 
-    print("\n[STEP 1/5] Virtual Environment Setup & Auto-Activation...")
+    print("\n[STEP 1/6] Virtual Environment Setup & Auto-Activation...")
 
     created_now = False
     if not os.path.exists(VENV_PYTHON):
@@ -183,14 +183,14 @@ def _resolve_db_params() -> dict:
     }
 
 
-def step2_verify_db_credentials() -> dict:
+def step3_verify_db_credentials() -> dict:
     """
-    STEP 2: Database Credentials Verification.
+    STEP 3: Database Credentials Verification.
     Validates .env presence, credential fields, and tests authenticating to PostgreSQL.
     """
     import psycopg
 
-    print("\n[STEP 2/5] Database Credentials Verification...")
+    print("\n[STEP 3/6] Database Credentials Verification...")
 
     if not os.path.exists(ENV_FILE):
         print("  [ERROR] .env file not found in backend/.env or project root. Create backend/.env and configure your PostgreSQL credentials.")
@@ -226,16 +226,16 @@ def step2_verify_db_credentials() -> dict:
     return db
 
 
-def step3_ensure_database_exists(db: dict):
+def step4_ensure_database_exists(db: dict):
     """
-    STEP 3: Database Existence Check.
+    STEP 4: Database Existence Check.
     Checks whether the target database exists and creates it automatically if missing.
     """
     import psycopg
     from psycopg import sql
 
     db_name = db["db_name"]
-    print(f"\n[STEP 3/5] Database Existence Check ('{db_name}')...")
+    print(f"\n[STEP 4/6] Database Existence Check ('{db_name}')...")
 
     try:
         with psycopg.connect(
@@ -274,12 +274,12 @@ def step3_ensure_database_exists(db: dict):
         sys.exit(1)
 
 
-def step4_validate_and_init_schema():
+def step5_validate_and_init_schema():
     """
-    STEP 4: Database Schema Validation & Table Initialization.
+    STEP 5: Database Schema Validation & Table Initialization.
     Creates any missing ORM tables via SQLAlchemy metadata and validates all expected tables and columns exist.
     """
-    print("\n[STEP 4/5] Database Schema Validation & Table Initialization...")
+    print("\n[STEP 5/6] Database Schema Validation & Table Initialization...")
 
     if BASE_DIR not in sys.path:
         sys.path.insert(0, BASE_DIR)
@@ -336,14 +336,19 @@ def _ensure_frontend_deps():
         print("  [OK] Frontend node_modules verified.")
 
 
-def _ensure_ssl_certs(local_ip: str) -> tuple[str, str]:
-    """Generate (or reuse) a self-signed TLS certificate for localhost, 127.0.0.1, and local_ip."""
+def step2_ensure_ssl_certs(local_ip: str = LOCAL_IP) -> tuple[str, str]:
+    """
+    STEP 2: SSL Certificate Check & Generation.
+    Creates certs/cert.pem and certs/key.pem automatically if missing, expired, or IP changed.
+    """
     from datetime import datetime, timedelta, timezone
     import ipaddress
     from cryptography import x509
     from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.x509.oid import NameOID
+
+    print("\n[STEP 2/6] SSL Certificate Check & Generation...")
 
     os.makedirs(CERTS_DIR, exist_ok=True)
     cert_path = os.path.join(CERTS_DIR, "cert.pem")
@@ -364,11 +369,14 @@ def _ensure_ssl_certs(local_ip: str) -> tuple[str, str]:
                 and local_ip in ip_strs
                 and expiry > now_utc + timedelta(days=7)
             ):
+                print(f"  [OK] SSL certificates verified at {CERTS_DIR} (covers localhost & {local_ip}).")
                 return cert_path, key_path
+            print(f"  -> Existing certificate does not match current IP ({local_ip}) or is expiring soon. Regenerating...")
         except Exception:
-            pass
+            print("  -> Existing certificate is invalid/unreadable. Regenerating...")
+    else:
+        print("  -> SSL certificate files not found in certs/. Creating automatically...")
 
-    print(f"  -> Generating self-signed HTTPS certificate for localhost & {local_ip}...")
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
     subject = issuer = x509.Name([
@@ -412,22 +420,23 @@ def _ensure_ssl_certs(local_ip: str) -> tuple[str, str]:
     with open(cert_path, "wb") as f:
         f.write(cert.public_bytes(serialization.Encoding.PEM))
 
-    print(f"  [OK] HTTPS certificate ready at {CERTS_DIR}")
+    print(f"  [OK] SSL certificates generated at {CERTS_DIR} (covers localhost & {local_ip}).")
     return cert_path, key_path
 
 
-def step5_start_servers():
+def step6_start_servers(cert_path: str, key_path: str):
     """
-    STEP 5: Starting Backend & Frontend Servers.
+    STEP 6: Starting Backend & Frontend Servers.
     Starts FastAPI (HTTPS) on 0.0.0.0:4501 and Vite React UI (HTTPS) on 0.0.0.0:4500.
     """
-    print("\n[STEP 5/5] Starting Backend & Frontend Servers (HTTPS)...")
+    print("\n[STEP 6/6] Starting Backend & Frontend Servers (HTTPS)...")
     try:
         _ensure_frontend_deps()
     except Exception as exc:
         print(f"  [WARN] Notice on npm setup: {exc}")
 
-    cert_path, key_path = _ensure_ssl_certs(LOCAL_IP)
+    if not (os.path.exists(cert_path) and os.path.exists(key_path)):
+        cert_path, key_path = step2_ensure_ssl_certs(LOCAL_IP)
 
     print(f"  -> Starting FastAPI Backend on https://{LOCAL_IP}:4501 (also https://127.0.0.1:4501)...")
     backend_cmd = [
@@ -518,15 +527,16 @@ def step5_start_servers():
 
 
 def run_preflight_only():
-    """Execute Steps 1 through 4 without launching long-running servers (for verification)."""
+    """Execute Steps 1 through 5 without launching long-running servers (for verification)."""
     is_restarted_in_venv = os.environ.get("RTGS_VENV_ACTIVATED") == "1"
     if not is_restarted_in_venv:
         banner()
     step1_setup_and_activate_venv()
-    db = step2_verify_db_credentials()
-    step3_ensure_database_exists(db)
-    step4_validate_and_init_schema()
-    print("\n[PREFLIGHT COMPLETE] All 4 preflight checks passed.")
+    step2_ensure_ssl_certs(LOCAL_IP)
+    db = step3_verify_db_credentials()
+    step4_ensure_database_exists(db)
+    step5_validate_and_init_schema()
+    print("\n[PREFLIGHT COMPLETE] All 5 preflight checks passed.")
 
 
 def main():
@@ -541,10 +551,11 @@ def main():
     if not is_restarted_in_venv:
         banner()
     step1_setup_and_activate_venv()
-    db = step2_verify_db_credentials()
-    step3_ensure_database_exists(db)
-    step4_validate_and_init_schema()
-    step5_start_servers()
+    cert_path, key_path = step2_ensure_ssl_certs(LOCAL_IP)
+    db = step3_verify_db_credentials()
+    step4_ensure_database_exists(db)
+    step5_validate_and_init_schema()
+    step6_start_servers(cert_path, key_path)
 
 
 if __name__ == "__main__":
