@@ -186,15 +186,50 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
     await executeExtract();
   };
 
-  // Copy Clipboard Helper
-  const copyToClipboard = (text, sectionKey, label) => {
+  // Copy Clipboard Helper (supports both HTTPS/localhost and HTTP LAN IPs)
+  const copyToClipboard = async (text, sectionKey, label) => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedSection(sectionKey);
-    notifyFn(`${label} copied to clipboard!`, 'success');
-    setTimeout(() => {
-      setCopiedSection(null);
-    }, 2000);
+
+    let copied = false;
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch {
+        copied = false;
+      }
+    }
+
+    if (!copied) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.top = '-9999px';
+      textarea.style.left = '-9999px';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      try {
+        copied = document.execCommand('copy');
+      } catch {
+        copied = false;
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+
+    if (copied) {
+      setCopiedSection(sectionKey);
+      notifyFn(`${label} copied to clipboard!`, 'success');
+      setTimeout(() => {
+        setCopiedSection(null);
+      }, 2000);
+    } else {
+      notifyFn(`Failed to copy ${label}. Please check browser permissions.`, 'error');
+    }
   };
 
   // Optimized Memoized Transaction Filtering
