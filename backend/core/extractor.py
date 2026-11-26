@@ -1,3 +1,4 @@
+import difflib
 import importlib
 import os
 import re
@@ -98,12 +99,102 @@ def extract_name(text: str, bank: str):
     return None
 
 
+def _norm_alnum(text: str) -> str:
+    return re.sub(r"[^A-Z0-9]", "", (text or "").upper())
+
+
+def _core_business_part(norm_str: str) -> str:
+    return re.sub(
+        r"(ENTERPRISES|ENTERPRISE|ENTERPRIS|ENTERPRI|SOLUTIONS|SOLUTION|SOLUTI|SOLU|SOL|CAPITAL)$",
+        "",
+        norm_str,
+    )
+
+
+def _jaro_winkler(s1: str, s2: str) -> float:
+    if s1 == s2:
+        return 1.0
+    len1, len2 = len(s1), len(s2)
+    if not len1 or not len2:
+        return 0.0
+    max_dist = max(len1, len2) // 2 - 1
+    match = 0
+    hash_s1 = [0] * len1
+    hash_s2 = [0] * len2
+    for i in range(len1):
+        for j in range(max(0, i - max_dist), min(len2, i + max_dist + 1)):
+            if s1[i] == s2[j] and hash_s2[j] == 0:
+                hash_s1[i] = 1
+                hash_s2[j] = 1
+                match += 1
+                break
+    if match == 0:
+        return 0.0
+    t = 0
+    point = 0
+    for i in range(len1):
+        if hash_s1[i]:
+            while hash_s2[point] == 0:
+                point += 1
+            if s1[i] != s2[point]:
+                t += 1
+            point += 1
+    t //= 2
+    jaro = (match / len1 + match / len2 + (match - t) / match) / 3.0
+    prefix = 0
+    for i in range(min(4, len1, len2)):
+        if s1[i] == s2[i]:
+            prefix += 1
+        else:
+            break
+    return jaro + 0.1 * prefix * (1.0 - jaro)
+
+
+def match_canonical_name(raw: str, threshold: float = 0.95):
+    """Return canonical account name if raw matches >= threshold (95%), else None."""
+    canonical = getattr(name_mappings, "CANONICAL_ACCOUNTS", {})
+    nt = _norm_alnum(raw)
+    if not nt or not canonical:
+        return None
+
+    best_name = None
+    best_score = 0.0
+    for cname in canonical.values():
+        nc = _norm_alnum(cname)
+        if not nc:
+            continue
+        if nt == nc:
+            return cname
+        if len(nt) >= 12 and nc.startswith(nt):
+            score = 0.99
+        else:
+            score = _jaro_winkler(nt, nc)
+        if score < threshold:
+            continue
+
+        # Prevent false matches across different prefixes sharing common suffixes (e.g., SS vs SC Enterprises)
+        ct = _core_business_part(nt)
+        cc = _core_business_part(nc)
+        if min(len(ct), len(cc)) <= 4 and ct != cc:
+            continue
+        if ct and cc and difflib.SequenceMatcher(None, ct, cc).ratio() < 0.85:
+            continue
+
+        if score > best_score:
+            best_score = score
+            best_name = cname
+    return best_name
+
+
 def correct_name(raw: str, code: str = ""):
-    """Returns (final_name, mapped?). Checks global name mappings."""
+    """Returns (final_name, mapped?). Checks global name mappings and 95% canonical fuzzy match."""
     key = _norm(raw)
     lookup = {_norm(k): v for k, v in name_mappings.NAME_MAPPINGS.items()}
     if key in lookup:
         return lookup[key], True
+    canonical_match = match_canonical_name(raw)
+    if canonical_match:
+        return canonical_match, True
     return raw, False
 
 

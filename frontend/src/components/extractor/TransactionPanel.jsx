@@ -33,18 +33,18 @@ function TransactionCard({
   return (
     <div className="flex flex-col rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
       {/* Card Header */}
-      <div className="p-4 border-b border-slate-200 bg-slate-50/50">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className={`flex h-2.5 w-2.5 rounded-full ${dotClass}`} />
-            <div>
+      <div className="p-3.5 2xl:p-4 border-b border-slate-200 bg-slate-50/50">
+        <div className="flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className={`flex h-2.5 w-2.5 rounded-full shrink-0 ${dotClass}`} />
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900 tracking-tight">{title}</h2>
-                <span className={`text-xs font-mono px-2 py-0.5 rounded border font-semibold ${badgeClass}`}>
+                <h2 className="text-sm xl:text-base font-bold text-slate-900 tracking-tight">{title}</h2>
+                <span className={`text-[11px] xl:text-xs font-mono px-2 py-0.5 rounded border font-semibold ${badgeClass}`}>
                   {badge}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-mono mt-0.5">
+              <p className="text-[11px] xl:text-xs text-slate-500 font-mono mt-0.5 truncate">
                 {totalCount} transactions &bull; Total:{' '}
                 <span className="text-slate-900 font-bold">{totalFormatted}</span>
               </p>
@@ -55,7 +55,7 @@ function TransactionCard({
           <button
             type="button"
             onClick={onCopy}
-            className="flex items-center justify-center p-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm cursor-pointer active:scale-95"
+            className="flex items-center justify-center p-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm cursor-pointer active:scale-95 shrink-0"
             title={`Copy Yesterday ${title} Transaction list`}
             aria-label={`Copy ${title} List`}
           >
@@ -68,50 +68,50 @@ function TransactionCard({
         </div>
 
         {/* Search Bar */}
-        <div className="mt-3 relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="mt-2.5 relative">
+          <Search className="w-3.5 h-3.5 xl:w-4 xl:h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search account, party or amount..."
-            className="w-full pl-9 pr-4 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 transition-all"
+            className="w-full pl-8 xl:pl-9 pr-4 py-1.5 xl:py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-400 transition-all"
             aria-label={`Search ${title} transactions`}
           />
         </div>
       </div>
 
       {/* Transactions List */}
-      <div className="max-h-[480px] overflow-y-auto">
+      <div className="max-h-[48vh] min-h-[220px] 2xl:max-h-[520px] overflow-y-auto">
         {transactions.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 text-xs">
+          <div className="text-center py-10 text-slate-400 text-xs">
             {totalCount === 0 ? emptyLabel : 'No matches found'}
           </div>
         ) : (
           transactions.map((tx) => (
             <div
               key={`${sectionKey}-${tx.index}`}
-              className="group flex items-center justify-between px-4 py-3 border-b border-slate-100 hover:bg-slate-50/80 transition-colors [content-visibility:auto] [contain-intrinsic-size:52px]"
+              className="group flex items-center justify-between px-3.5 py-2.5 2xl:px-4 2xl:py-3 border-b border-slate-100 hover:bg-slate-50/80 transition-colors [content-visibility:auto] [contain-intrinsic-size:48px]"
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className="w-6 text-center text-xs font-mono text-slate-400 font-semibold">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-5 xl:w-6 text-center text-xs font-mono text-slate-400 font-semibold shrink-0">
                   {tx.index}.
                 </span>
-                <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                <span className="px-1.5 xl:px-2 py-0.5 rounded text-[11px] xl:text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200 shrink-0">
                   {tx.account}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 truncate">
+                  <p className="text-xs xl:text-sm font-semibold text-slate-800 truncate">
                     {tx.name}
                   </p>
-                  <p className="text-xs text-slate-400 truncate mt-0.5">
+                  <p className="text-[11px] xl:text-xs text-slate-400 truncate mt-0.5">
                     {tx.bank} &bull; {tx.file}
                   </p>
                 </div>
               </div>
 
-              <div className="text-right shrink-0 ml-3">
-                <span className={`inline-block px-3 py-1 rounded-lg text-xs font-mono font-bold border ${amountClass}`}>
+              <div className="text-right shrink-0 ml-2.5">
+                <span className={`inline-block px-2.5 py-1 rounded-lg text-[11px] xl:text-xs font-mono font-bold border ${amountClass}`}>
                   {tx.short}
                 </span>
               </div>

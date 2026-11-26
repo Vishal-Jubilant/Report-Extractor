@@ -90,16 +90,16 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <div className="flex h-full w-full overflow-hidden bg-white font-sans text-slate-900">
+      <div className="flex flex-col md:flex-row h-full w-full overflow-hidden bg-white font-sans text-slate-900">
         
-        {/* Docked Edge-to-Edge Fullscreen Sidebar */}
+        {/* Responsive Sidebar (Topbar + Drawer on mobile, Docked Sidebar on laptop/desktop) */}
         <Sidebar 
           activeTab={activeTab} 
           setActiveTab={handleTabChange} 
         />
 
         {/* Main Fullscreen Workspace with Preserved Tab State */}
-        <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-white relative">
+        <main className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden bg-white relative">
           <div className={`h-full w-full flex flex-col min-w-0 overflow-hidden ${activeTab === 'extractor' ? '' : 'hidden'}`}>
             <ExtractorView 
               isActive={activeTab === 'extractor'}

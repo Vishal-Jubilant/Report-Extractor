@@ -258,15 +258,15 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
   }, [results?.received?.transactions, recvSearchLower]);
 
   return (
-    <div className="flex-1 p-8 space-y-6 w-full h-full overflow-y-auto">
+    <div className="flex-1 p-4 sm:p-5 lg:p-6 2xl:p-8 space-y-4 lg:space-y-5 2xl:space-y-6 w-full h-full overflow-y-auto">
       
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 lg:pb-4 border-b border-slate-200/80">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-lg sm:text-xl 2xl:text-2xl font-bold tracking-tight text-slate-900">
             Statement Extractor
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs 2xl:text-sm text-slate-500 mt-0.5">
             Parse bank statements. Automatically identifies holder name and maps to account codes.
           </p>
         </div>
@@ -276,7 +276,7 @@ export default function ExtractorView({ onNotify, onNavigateToSettings, isActive
             <button
               type="button"
               onClick={() => copyToClipboard(results.combined_text, 'combined', 'Combined List')}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all shadow-sm cursor-pointer"
+              className="flex items-center gap-2 px-3 py-1.5 xl:px-3.5 xl:py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-all shadow-sm cursor-pointer"
             >
               {copiedSection === 'combined' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
               Copy All Text

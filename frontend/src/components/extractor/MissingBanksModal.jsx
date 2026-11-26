@@ -92,7 +92,7 @@ export default function MissingBanksModal({
         </div>
 
         {/* Warning Details */}
-        <div className="px-6 py-4 space-y-3 max-h-[360px] overflow-y-auto overscroll-contain">
+        <div className="px-5 py-3.5 sm:px-6 sm:py-4 space-y-3 max-h-[50vh] overflow-y-auto overscroll-contain">
           {hasNotInGroup && (
             <div className="space-y-2">
               {notInGroupFiles.map((fileItem) => (

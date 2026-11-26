@@ -150,21 +150,21 @@ export default function CollectionReportView() {
     : '';
 
   return (
-    <div className="flex-1 p-8 space-y-6 w-full h-full overflow-y-auto">
+    <div className="flex-1 p-4 sm:p-5 lg:p-6 2xl:p-8 space-y-4 lg:space-y-5 2xl:space-y-6 w-full h-full overflow-y-auto">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 lg:pb-4 border-b border-slate-200/80">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-lg sm:text-xl 2xl:text-2xl font-bold tracking-tight text-slate-900">
             Collection Report
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs 2xl:text-sm text-slate-500 mt-0.5">
             Upload your collection Excel sheet and click Proceed to generate and download Branch, Consultant &amp; Collection Executive PDF reports as a ZIP archive.
           </p>
         </div>
       </div>
 
       {/* Modern Excel Dropzone Card */}
-      <div className="rounded-3xl bg-white border border-slate-200/90 shadow-sm p-2.5">
+      <div className="rounded-2xl xl:rounded-3xl bg-white border border-slate-200/90 shadow-sm p-2">
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -178,7 +178,7 @@ export default function CollectionReportView() {
               fileInputRef.current?.click();
             }
           }}
-          className={`group relative overflow-hidden flex flex-col items-center justify-center min-h-[250px] py-12 px-8 rounded-2xl border border-dashed transition-all duration-200 ${
+          className={`group relative overflow-hidden flex flex-col items-center justify-center min-h-[150px] lg:min-h-[180px] 2xl:min-h-[240px] py-6 lg:py-8 2xl:py-12 px-5 sm:px-8 rounded-xl xl:rounded-2xl border border-dashed transition-all duration-200 ${
             isGenerating
               ? 'border-slate-200 bg-slate-50/70 cursor-wait opacity-85'
               : isDragging
@@ -202,25 +202,25 @@ export default function CollectionReportView() {
           />
 
           {/* Modern Icon Badge */}
-          <div className="relative z-10 mb-4">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 shadow-md ${
+          <div className="relative z-10 mb-3 2xl:mb-4">
+            <div className={`w-11 h-11 2xl:w-14 2xl:h-14 rounded-xl 2xl:rounded-2xl flex items-center justify-center transition-all duration-200 shadow-md ${
               isDragging
                 ? 'bg-indigo-600 text-white shadow-indigo-500/25 scale-105'
                 : 'bg-slate-900 text-white shadow-slate-900/15 group-hover:-translate-y-0.5 group-hover:shadow-lg'
             }`}>
-              <UploadCloud className="w-6 h-6" />
+              <UploadCloud className="w-5 h-5 2xl:w-6 2xl:h-6" />
             </div>
           </div>
 
-          <h2 className="relative z-10 text-base sm:text-lg font-bold text-slate-900 tracking-tight text-center">
+          <h2 className="relative z-10 text-sm sm:text-base 2xl:text-lg font-bold text-slate-900 tracking-tight text-center">
             {isDragging ? 'Drop your Excel sheet here' : 'Upload Collection Excel Sheet'}
           </h2>
-          <p className="relative z-10 text-xs sm:text-sm text-slate-500 mt-1 text-center max-w-md">
+          <p className="relative z-10 text-xs 2xl:text-sm text-slate-500 mt-1 text-center max-w-md">
             Drag and drop your file here, or select an Excel workbook from your computer
           </p>
 
-          <div className="relative z-10 flex items-center justify-center mt-5">
-            <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-sm group-hover:border-slate-300 group-hover:shadow transition-all">
+          <div className="relative z-10 flex items-center justify-center mt-3.5 2xl:mt-5">
+            <span className="inline-flex items-center gap-2 px-4 py-2 2xl:px-5 2xl:py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-sm group-hover:border-slate-300 group-hover:shadow transition-all">
               Browse Excel File
             </span>
           </div>
@@ -229,7 +229,7 @@ export default function CollectionReportView() {
 
       {/* Selected File & Proceed Card */}
       {selectedFile && (
-        <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-4">
+        <div className="p-4 lg:p-5 2xl:p-6 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3 lg:space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
               <span className="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-900 font-bold text-xs font-mono">
@@ -287,14 +287,14 @@ export default function CollectionReportView() {
 
           {/* Proceed Button Row */}
           <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <span className="text-sm text-slate-600">
+            <span className="text-xs xl:text-sm text-slate-600">
               Ready to generate PDFs. Click <strong className="text-slate-900">Proceed</strong> to download ZIP.
             </span>
             <button
               type="button"
               onClick={handleProceed}
               disabled={isGenerating}
-              className={`flex items-center justify-center gap-3 px-11 py-3.5 rounded-xl font-bold text-base tracking-wide transition-all shadow-md cursor-pointer ${
+              className={`flex items-center justify-center gap-2 px-5 py-2 2xl:px-6 2xl:py-2.5 rounded-xl font-semibold text-xs sm:text-sm tracking-wide transition-all shadow-sm cursor-pointer ${
                 isGenerating
                   ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
                   : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 active:scale-98'
@@ -302,13 +302,13 @@ export default function CollectionReportView() {
             >
               {isGenerating ? (
                 <>
-                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
                   <span>Processing...</span>
                 </>
               ) : (
                 <>
                   <span>Proceed</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </>
               )}
             </button>

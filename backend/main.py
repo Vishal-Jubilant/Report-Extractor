@@ -28,6 +28,7 @@ from backend.core.extractor import (
     detect_bank,
     extract_transactions,
     identify_account,
+    match_canonical_name,
     _reload_config,
 )
 from backend.core.formatting import indian_format, to_float
@@ -452,6 +453,40 @@ def _sync_precheck(
     }
 
 
+_ORG_SUFFIX_WORDS = {"ENTERPRISE", "ENTERPRISES", "ENTERPRIS", "SOLUTION", "SOLUTIONS"}
+
+
+def _title_word(word: str) -> str:
+    return re.sub(
+        r"[A-Za-z0-9]+",
+        lambda m: m.group(0)[0].upper() + m.group(0)[1:].lower(),
+        word,
+    )
+
+
+def _format_party_name(name: str) -> str:
+    """Resolve canonical accounts, keep 2-3 letter prefixes before Enterprise/Solution uppercase, else Title Case."""
+    clean = (name or "").strip()
+    if not clean:
+        return clean
+    canonical_match = match_canonical_name(clean)
+    if canonical_match:
+        return canonical_match
+    if any(ch.islower() for ch in clean):
+        return clean
+
+    parts = clean.split()
+    formatted = []
+    for idx, part in enumerate(parts):
+        next_alpha = re.sub(r"[^A-Z]", "", parts[idx + 1].upper()) if idx + 1 < len(parts) else ""
+        part_alpha = re.sub(r"[^A-Z0-9]", "", part.upper())
+        if next_alpha in _ORG_SUFFIX_WORDS and part_alpha.isalpha() and 2 <= len(part_alpha) <= 3:
+            formatted.append(part.upper())
+        else:
+            formatted.append(_title_word(part))
+    return " ".join(formatted)
+
+
 def _sync_extract(payloads: List[Tuple[str, bytes]]) -> dict:
     """CPU-bound PDF and tabular extraction executed in worker thread to prevent event loop blocking."""
     _reload_config()
@@ -537,11 +572,12 @@ def _sync_extract(payloads: List[Tuple[str, bytes]]) -> dict:
         for i, r in enumerate(send_df.itertuples(), 1):
             amount_val = to_float(r.Amount)
             send_total_sum += amount_val
+            formatted_name = _format_party_name(r.Name)
             send_list.append({
                 "index": i,
                 "account": r.Account,
                 "bank": r.Bank,
-                "name": r.Name,
+                "name": formatted_name,
                 "raw_name": getattr(r, "Raw Name", r.Name),
                 "amount": r.Amount,
                 "amount_num": amount_val,
@@ -549,17 +585,18 @@ def _sync_extract(payloads: List[Tuple[str, bytes]]) -> dict:
                 "type": r.Type,
                 "status": r.Status,
                 "file": r.File,
-                "line_text": f"{i}.{r.Account} - {r.Name} - {r.Short}",
+                "line_text": f"{i}.{r.Account} - {formatted_name} - {r.Short}",
             })
 
         for i, r in enumerate(recv_df.itertuples(), 1):
             amount_val = to_float(r.Amount)
             received_total_sum += amount_val
+            formatted_name = _format_party_name(r.Name)
             received_list.append({
                 "index": i,
                 "account": r.Account,
                 "bank": r.Bank,
-                "name": r.Name,
+                "name": formatted_name,
                 "raw_name": getattr(r, "Raw Name", r.Name),
                 "amount": r.Amount,
                 "amount_num": amount_val,
@@ -567,7 +604,7 @@ def _sync_extract(payloads: List[Tuple[str, bytes]]) -> dict:
                 "type": r.Type,
                 "status": r.Status,
                 "file": r.File,
-                "line_text": f"{i}.{r.Account} - {r.Name} - {r.Short}",
+                "line_text": f"{i}.{r.Account} - {formatted_name} - {r.Short}",
             })
 
         send_formatted_lines = "\n".join(item["line_text"] for item in send_list)

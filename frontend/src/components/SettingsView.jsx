@@ -437,15 +437,15 @@ export default function SettingsView({ onNotify }) {
   }, [groups, groupSearchLower]);
 
   return (
-    <div className="flex-1 p-8 space-y-7 w-full h-full overflow-y-auto">
+    <div className="flex-1 p-4 sm:p-5 lg:p-6 2xl:p-8 space-y-4 lg:space-y-5 2xl:space-y-6 w-full h-full overflow-y-auto">
       
       {/* Settings Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 lg:pb-4 border-b border-slate-200/80">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-lg sm:text-xl 2xl:text-2xl font-bold tracking-tight text-slate-900">
             System Configuration
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs 2xl:text-sm text-slate-500 mt-0.5">
             Manage groups, associated enterprises, and required bank statement rules.
           </p>
         </div>
@@ -454,14 +454,14 @@ export default function SettingsView({ onNotify }) {
       {/* Unified Enterprise Table */}
       <div className="rounded-2xl bg-white border border-slate-200/90 shadow-2xs overflow-hidden">
         {/* Table Toolbar */}
-        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-4 lg:p-5 2xl:p-6 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3 lg:gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
-              <Building2 className="w-5 h-5 text-white" aria-hidden="true" />
+            <div className="w-9 h-9 2xl:w-10 2xl:h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs">
+              <Building2 className="w-4 h-4 2xl:w-5 2xl:h-5 text-white" aria-hidden="true" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                <h2 className="text-sm xl:text-base font-bold text-slate-900 tracking-tight">
                   Enterprises &amp; Group Configurations
                 </h2>
               </div>
@@ -471,16 +471,16 @@ export default function SettingsView({ onNotify }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             {/* Search Input */}
-            <div className="relative w-full sm:w-56">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <div className="relative w-full sm:w-48 xl:w-56">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={enterpriseSearch}
                 onChange={(e) => setEnterpriseSearch(e.target.value)}
                 placeholder="Search group, enterprise, bank..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white focus:ring-1 focus:ring-slate-900 transition-all shadow-2xs"
+                className="w-full pl-9 pr-3 py-1.5 xl:py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs xl:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-slate-900 focus:bg-white focus:ring-1 focus:ring-slate-900 transition-all shadow-2xs"
               />
             </div>
 
@@ -488,10 +488,10 @@ export default function SettingsView({ onNotify }) {
             <button
               type="button"
               onClick={openAddGroupModal}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-[0.98] shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 xl:px-3.5 xl:py-2 rounded-xl text-xs xl:text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-[0.98] shrink-0"
               title="Add a new group with multiple enterprises and banks"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5 xl:w-4 xl:h-4" />
               <span>Add Group</span>
             </button>
 
@@ -499,10 +499,10 @@ export default function SettingsView({ onNotify }) {
             <button
               type="button"
               onClick={() => setShowAddEnterpriseModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-[0.98] shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 xl:px-3.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-[0.98] shrink-0"
               title="Add a new enterprise entity to the system"
             >
-              <Plus className="w-4 h-4 text-slate-500" />
+              <Plus className="w-3.5 h-3.5 xl:w-4 xl:h-4 text-slate-500" />
               <span>Add Enterprise</span>
             </button>
 
@@ -510,10 +510,10 @@ export default function SettingsView({ onNotify }) {
             <button
               type="button"
               onClick={() => setShowAddBankModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-[0.98] shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 xl:px-3.5 xl:py-2 rounded-xl text-xs xl:text-sm font-semibold bg-white text-slate-700 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-[0.98] shrink-0"
               title="Add a new bank statement requirement option"
             >
-              <Plus className="w-4 h-4 text-slate-500" />
+              <Plus className="w-3.5 h-3.5 xl:w-4 xl:h-4 text-slate-500" />
               <span>Add Bank</span>
             </button>
           </div>
@@ -524,48 +524,48 @@ export default function SettingsView({ onNotify }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <th scope="col" className="px-6 py-3.5 w-16 text-center">
+                <th scope="col" className="px-3.5 lg:px-4 2xl:px-6 py-3 w-14 text-center">
                   S.No
                 </th>
-                <th scope="col" className="px-6 py-3.5 w-48">
+                <th scope="col" className="px-3.5 lg:px-4 2xl:px-6 py-3 w-36 xl:w-44">
                   Group Name
                 </th>
-                <th scope="col" className="px-6 py-3.5 min-w-[200px]">
+                <th scope="col" className="px-3.5 lg:px-4 2xl:px-6 py-3 min-w-[160px]">
                   Enterprises Name
                 </th>
-                <th scope="col" className="px-6 py-3.5 min-w-[280px]">
+                <th scope="col" className="px-3.5 lg:px-4 2xl:px-6 py-3 min-w-[200px]">
                   Required Bank Statements
                 </th>
-                <th scope="col" className="px-6 py-3.5 w-28 text-right">
+                <th scope="col" className="px-3.5 lg:px-4 2xl:px-6 py-3 w-24 text-right">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
+            <tbody className="divide-y divide-slate-100 text-xs xl:text-sm">
               {filteredGroups.map((grp, idx) => (
                 <tr 
                   key={grp.group_name}
                   className="hover:bg-slate-50/70 transition-colors group align-top"
                 >
                   {/* S.No */}
-                  <td className="px-6 py-4 text-center font-mono text-xs font-semibold text-slate-400 tabular-nums">
+                  <td className="px-3.5 lg:px-4 2xl:px-6 py-3 2xl:py-4 text-center font-mono text-xs font-semibold text-slate-400 tabular-nums">
                     {String(idx + 1).padStart(2, '0')}
                   </td>
 
                   {/* Group Name */}
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-slate-900 text-white shadow-2xs tracking-wider">
+                  <td className="px-3.5 lg:px-4 2xl:px-6 py-3 2xl:py-4 whitespace-nowrap">
+                    <span className="inline-flex items-center px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-lg text-xs font-mono font-bold bg-slate-900 text-white shadow-2xs tracking-wider">
                       {grp.group_name}
                     </span>
                   </td>
 
                   {/* Enterprises Name (1, 2, 3...) */}
-                  <td className="px-6 py-4">
-                    <div className="space-y-2">
+                  <td className="px-3.5 lg:px-4 2xl:px-6 py-3 2xl:py-4">
+                    <div className="space-y-1.5">
                       {grp.enterprises.map((ent, eIdx) => (
-                        <div key={eIdx} className="flex items-center gap-2 min-h-[26px]">
+                        <div key={eIdx} className="flex items-center gap-2 min-h-[24px]">
                           <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
-                          <span className="text-sm font-bold text-slate-900">
+                          <span className="text-xs xl:text-sm font-bold text-slate-900">
                             {ent.name || ent.code}
                           </span>
                         </div>
@@ -574,16 +574,16 @@ export default function SettingsView({ onNotify }) {
                   </td>
 
                   {/* Required Bank Statements per Enterprise */}
-                  <td className="px-6 py-4">
-                    <div className="space-y-2">
+                  <td className="px-3.5 lg:px-4 2xl:px-6 py-3 2xl:py-4">
+                    <div className="space-y-1.5">
                       {grp.enterprises.map((ent, eIdx) => (
-                        <div key={eIdx} className="flex items-center min-h-[26px]">
+                        <div key={eIdx} className="flex items-center min-h-[24px]">
                           <div className="flex flex-wrap items-center gap-1.5">
                             {(ent.banks && ent.banks.length > 0) ? (
                               ent.banks.map((b) => (
                                 <span
                                   key={b}
-                                  className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200/90 shadow-2xs"
+                                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] xl:text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200/90 shadow-2xs"
                                 >
                                   {b}
                                 </span>
@@ -598,7 +598,7 @@ export default function SettingsView({ onNotify }) {
                   </td>
 
                   {/* Actions */}
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <td className="px-3.5 lg:px-4 2xl:px-6 py-3 2xl:py-4 whitespace-nowrap text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         type="button"

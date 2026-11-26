@@ -24,11 +24,11 @@ NAME_MAPPINGS = {
     "PARJUNA": "P Arjuna",
     "NEWTHANGAM STEELS": "New Thangam Steel",
     "TRUEKEM": "Truekem",
-    "SURGECAPITALSOLU": "SURGE CAPITAL SOLUTIONS",
-    "SURGECAPITALSOLUTIONS": "SURGE CAPITAL SOLUTIONS",
-    "ASCENDSOLUTION": "ASCEND SOLUTIONS",
-    "ASCENDSOLUTIONS": "ASCEND SOLUTIONS",
-    "FORTUNEENTERPRISES": "FORTUNE ENTERPRISES",
+    "SURGECAPITALSOLU": "Surge Capital Solutions",
+    "SURGECAPITALSOLUTIONS": "Surge Capital Solutions",
+    "ASCENDSOLUTION": "Ascend Solutions",
+    "ASCENDSOLUTIONS": "Ascend Solutions",
+    "FORTUNEENTERPRISES": "Fortune Enterprises",
 
     # ---------------- KOTAK ----------------
     "MR CARE CENTRE PVT L": "MR CARE CENTRE PVT LTD",
@@ -54,5 +54,34 @@ NAME_MAPPINGS = {
 
     # Add new entries here:
     # "EXTRACTED NAME": "CORRECT NAME",
+}
+
+# Canonical Account Names & Acronyms (95%+ fuzzy match resolves extracted party names to these exact names)
+CANONICAL_ACCOUNTS = {
+    "SCS": "Surge Capital Solutions",
+    "GC": "Growth Capital",
+    "FC": "Finova Capital",
+    "AS": "Ascend Solutions",
+    "ASE": "AS Enterprises",
+    "SCE": "SC Enterprises",
+    "ASQ": "A Square Enterprises",
+    "SN": "S Nirmala",
+    "FE": "Fortune Enterprises",
+    "JC": "Jubilant Capital",
+    "RP": "Raja Priya",
+    "AE": "Aadit Enterprises",
+    "SE": "Sharvil Enterprises",
+    "MAT": "Matheswaran",
+    "PAN": "Pankaj",
+    "ACE": "ACE Enterprises",
+    "RE": "Rohit Enterprises",
+    "SS": "S.Sudhakar",
+    "SV": "Singaravalli",
+    "SVA": "Senthil Vadivel AJ",
+    "SEN": "Senthil Enterprises",
+    "JE": "Jay Enterprises",
+    "ECS": "Easy Credit Solutions",
+    "SCN": "Sathyam Credit Solutions",
+    "PE": "Propel Enterprises",
 }
 

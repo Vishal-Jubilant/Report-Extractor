@@ -4,12 +4,28 @@
 
 @layer base {
   html {
-    font-size: 16.8px;
+    /* Fluid base scale: comfortable on laptops & compact viewports, full scale on large monitors */
+    font-size: 13.5px;
     height: 100%;
     width: 100%;
     margin: 0;
     padding: 0;
     overflow: hidden;
+  }
+  @media (min-width: 1280px) and (min-height: 760px) {
+    html {
+      font-size: 14.5px;
+    }
+  }
+  @media (min-width: 1536px) and (min-height: 860px) {
+    html {
+      font-size: 15.5px;
+    }
+  }
+  @media (min-width: 1760px) and (min-height: 920px) {
+    html {
+      font-size: 16.8px;
+    }
   }
   body {
     background-color: #fafafa;
