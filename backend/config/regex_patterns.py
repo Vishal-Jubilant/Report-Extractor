@@ -16,15 +16,24 @@ Bank-wise regex. There are two per-bank dicts:
 
 # Transaction type start:  RTGS/  RTGS-  RTGS:  RTGSINW...   NEFT/  NEFT-  NEFT:  NEFTINW...   IFT-   INF/
 _TXN = r"\(?\s*(?:RTGS|NEFT|IFT|INF)(?:INW|\s*[/:-])"
+# Middle of description: ONLY RTGS or NEFT (NOT IFT or INF)
+_MID_TXN = r"(?<![A-Z0-9])(?:RTGS|NEFT)(?:INW)?(?![A-Z])"
+
+
+def _row_start(extra: str = "") -> str:
+    """Match allowed transaction starts OR RTGS/NEFT appearing anywhere in the description."""
+    start = rf"^(?:{_TXN}|{extra})" if extra else rf"^{_TXN}"
+    return rf"(?i)(?:{start}|{_MID_TXN})"
+
 
 ROW_START = {
-    # DESCRIPTION column start check
-    "ICICI": r"(?i)^(?:" + _TXN + r"|TRFR\s+FROM)",
-    "KOTAK": r"(?i)^(?:" + _TXN + r"|CASH\s+DEPOSIT|RECD:IMPS/)",
-    "AXIS":  r"(?i)^(?:" + _TXN + r"|TRF\s*[/-])",
+    # DESCRIPTION column check
+    "ICICI": _row_start(r"TRFR\s+FROM"),
+    "KOTAK": _row_start(r"CASH\s+DEPOSIT|RECD:IMPS/"),
+    "AXIS":  _row_start(r"TRF\s*[/-]"),
     # IDBI: also matches "BARBR52026102700758657 NAME" (UTR + name)
-    "IDBI":  r"(?i)^(?:" + _TXN + r"|[A-Z]{4}[A-Z0-9]\d{9,}\s|\d{4,}-[A-Z]{3}-)",
-    "IDFC":  r"(?i)^" + _TXN,
+    "IDBI":  _row_start(r"[A-Z]{4}[A-Z0-9]\d{9,}\s|\d{4,}-[A-Z]{3}-"),
+    "IDFC":  _row_start(),
 }
 
 # CHQ / REF NO column start check (for banks with ref_col defined in bank_layouts.py)
@@ -37,17 +46,32 @@ ROW_REF_START = {
     "IDFC":  r"(?i)^" + _TXN,
 }
 
+# Reference / UTR token containing at least 4 digits (prevents matching fee narrations like "RTGS CHARGES")
+_REF = r"(?=[A-Z0-9]*\d{4,})[A-Z0-9]{6,}"
+
+# Shared RTGS/NEFT patterns when RTGS or NEFT appears in the middle (or start) of description
+_MID_RTGS_NEFT_PATTERNS = [
+    # ... RTGS-KKBKR...-NAME-... / ... NEFT-IDFB...-NAME-...
+    rf"(?i)(?<![A-Z0-9])(?:RTGS|NEFT)(?:INW)?\s*-\s*{_REF}\s*-\s*([^\s/-][^-]*?)(?:\s*-|$)",
+    # ... RTGS-NAME-KKBKR... / ... NEFT-NAME-CMS...
+    rf"(?i)(?<![A-Z0-9])(?:RTGS|NEFT)(?:INW)?\s*-\s*([^\s/-].*?)\s*-\s*{_REF}\b",
+    # ... RTGS KKBKR.../NAME  /  ... NEFT/UTR/NAME/... (e.g. BRB:Sent RTGS KKBKR52026112600918891/SRI MAHI AGE)
+    rf"(?i)(?<![A-Z0-9])(?:RTGS|NEFT)(?:INW)?\s*[:/-]?\s*{_REF}\s*/\s*([^\s/][^/]*?)(?:/|$)",
+    # ... RTGS KKBKR... NAME / ... NEFT UTR NAME (space-separated UTR + Name)
+    rf"(?i)(?<![A-Z0-9])(?:RTGS|NEFT)(?:INW)?\s*[:/-]?\s*(?=[A-Z0-9]*\d{{8,}})[A-Z0-9]{{10,}}\s+([^\s/][^/]*?)\s*$",
+]
+
 BANK_PATTERNS = {
     "ICICI": [
         # RTGS:ICICR5202611 2100740872/UTI BANK LTD/SHANTHI FOOD INDUSTRIES
-        r"(?i)^RTGS:\s*(?:[^/]+/)+([^/]+?)\s*$",
+        r"(?i)(?<![A-Z0-9])RTGS:\s*(?:[^/]+/)+([^/]+?)\s*$",
         # RTGS/ICICR.../SBIN0015825/81090561/LAKSHMIDEVI/LAKSHMIDEVIMOTOR   (last segment = name)
-        r"(?i)^RTGS/(?:[^/]+/)+([^/]+)$",
+        r"(?i)(?<![A-Z0-9])RTGS/(?:[^/]+/)+([^/]+)$",
         # RTGS-KKBKR22026102325454166-SURGECAPITALSOLUTIONS-9749176601-KKBK0000958
-        r"(?i)^RTGS-[A-Z]{4}R\d+-(.+?)-?\d{8,}-[A-Z]{4}0\w{6}$",
-        r"(?i)^RTGS-[A-Z]{4}R\d+-([^\s-]+)",
+        r"(?i)(?<![A-Z0-9])RTGS-[A-Z]{4}R\d+-(.+?)-?\d{8,}-[A-Z]{4}0\w{6}$",
+        r"(?i)(?<![A-Z0-9])RTGS-[A-Z]{4}R\d+-([^\s-]+)",
         # NEFT-IDFB6300M2390441-ALOK INFOTECH--10095642705-IDFB0080133
-        r"(?i)^NEFT-[A-Z0-9]+-(.+?)-[^-]*-\d{6,}-[A-Z]{4}0\w{6}$",
+        r"(?i)(?<![A-Z0-9])NEFT-[A-Z0-9]+-(.+?)-[^-]*-\d{6,}-[A-Z]{4}0\w{6}$",
         # INF/NEFT/IN42630057499042/RATN0000182/81104049/SIVARAMANSUDHAKAR/EMBASSYOFBR
         r"(?i)^INF/NEFT/[^/]+/[^/]+/\d+\s*/\s*([^/]+)",
         # INF/NEFT/IN42630057807402/KKBK0000490/ASKOTAK/ASCENDSOLUTIONS   (without acc no)
@@ -60,6 +84,9 @@ BANK_PATTERNS = {
         r"(?i)^INF/INFT/\d+/([^/]+)$",
         # TRFR FROM: G.G.M PILE FOUNDATION
         r"(?i)^TRFR\s+FROM:?\s*(.+)$",
+        # ICICI middle RTGS/NEFT with optional /IFSC/ACCT segments before NAME
+        rf"(?i)(?<![A-Z0-9])(?:RTGS|NEFT)(?:INW)?\s*[:/-]?\s*{_REF}\s*/\s*(?:[A-Z]{{4}}0\w{{6}}\s*/\s*)?(?:\d+\s*/\s*)?([^\s/][^/]*?)(?:/|$)",
+        *_MID_RTGS_NEFT_PATTERNS,
     ],
 
     "KOTAK": [
@@ -74,6 +101,7 @@ BANK_PATTERNS = {
         r"(?i)^(.+?)\s+by Self\b",
         # Inward (ref RTGSINW/NEFTINW): UTIBR62026102316729066 UNIQUE MARINE ACE ENTERPR
         r"(?i)^[A-Z0-9]{10,}\s+(.+)$",
+        *_MID_RTGS_NEFT_PATTERNS,
     ],
 
     "AXIS": [
@@ -81,16 +109,19 @@ BANK_PATTERNS = {
         r"(?i)^\(?\s*(?:RTGS|NEFT)\s*/\s*[^/]+/\s*([^/]+?)\s*(?:/|$)",
         # TRF/SIVARAMAN SURESHKUMAR/
         r"(?i)^TRF/([^/]+)",
+        *_MID_RTGS_NEFT_PATTERNS,
     ],
 
     "IDBI": [
         r"(?i)^BARBR\d{17}\s+(.+?)\s*$",
         r"(?i)^CIUBR\d{17}\s+(.+?)\s*$",
+        *_MID_RTGS_NEFT_PATTERNS,
     ],
 
     "IDFC": [
         # RTGS/ IDFBR62026102905078857 JUBILANT CAPITAL/ KKBK0008664   (UTR, name, beneficiary IFSC)
         # r"(?i)^(?:RTGS|NEFT)\s*/\s*[A-Z0-9]{10,}\s*/?\s*(.+?)\s*/\s*[A-Z]{4}0\w{6}\s*$",
+        *_MID_RTGS_NEFT_PATTERNS,
     ],
 
     # "HDFC": [ r"(?i)^...(.+?)..." ],

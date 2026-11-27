@@ -1,5 +1,6 @@
 import importlib.util
 import os
+import signal
 import socket
 import subprocess
 import sys
@@ -138,7 +139,17 @@ def step1_setup_and_activate_venv():
         env["VIRTUAL_ENV"] = VENV_DIR
         env["PATH"] = VENV_BIN_DIR + os.pathsep + env.get("PATH", "")
 
-        exit_code = subprocess.call([VENV_PYTHON, os.path.abspath(__file__), *sys.argv[1:]], env=env)
+        proc = subprocess.Popen([VENV_PYTHON, os.path.abspath(__file__), *sys.argv[1:]], env=env)
+        try:
+            exit_code = proc.wait()
+        except KeyboardInterrupt:
+            # Child shares the console and handles Ctrl+C server cleanup; wait cleanly for it.
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+            try:
+                exit_code = proc.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                proc.terminate()
+                exit_code = 130
         sys.exit(exit_code)
 
     # Ensure environment variables reflect activated .venv for child processes
@@ -454,58 +465,60 @@ def step6_start_servers(cert_path: str, key_path: str):
         cert_path,
         "--reload",
     ]
-    backend_process = subprocess.Popen(
-        backend_cmd,
-        cwd=BASE_DIR,
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
-    )
-
-    # Wait for backend to be ready before starting frontend (avoids ECONNREFUSED race)
-    print("  -> Waiting for backend to be ready...", end="", flush=True)
-    import ssl
-    import urllib.request
-    ssl_ctx = ssl._create_unverified_context()
-    backend_ready = False
-    for _ in range(20):  # up to 10 seconds
-        time.sleep(0.5)
-        try:
-            urllib.request.urlopen("https://127.0.0.1:4501/docs", timeout=1, context=ssl_ctx)
-            backend_ready = True
-            break
-        except Exception:
-            print(".", end="", flush=True)
-    print(" OK" if backend_ready else " (timeout, starting frontend anyway)")
-
-    print(f"  -> Starting React + Tailwind UI on https://{LOCAL_IP}:4500...")
-    # Write the backend IP and SSL paths into frontend/.env.local so Vite serves HTTPS and proxies cleanly
-    env_local_path = os.path.join(FRONTEND_DIR, ".env.local")
-    cert_env_path = cert_path.replace("\\", "/")
-    key_env_path = key_path.replace("\\", "/")
-    with open(env_local_path, "w") as f:
-        f.write(f"VITE_BACKEND_HOST={LOCAL_IP}\n")
-        f.write("VITE_BACKEND_PORT=4501\n")
-        f.write("VITE_FRONTEND_PORT=4500\n")
-        f.write("VITE_USE_HTTPS=true\n")
-        f.write(f"VITE_SSL_CERT={cert_env_path}\n")
-        f.write(f"VITE_SSL_KEY={key_env_path}\n")
-    frontend_cmd = f"{NPM_CMD} run dev"
-    frontend_process = subprocess.Popen(
-        frontend_cmd,
-        cwd=FRONTEND_DIR,
-        shell=True,
-        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
-    )
-
-    print("\n" + "-" * 68)
-    print("  App is running over HTTPS!")
-    print(f"  Frontend UI:  https://{LOCAL_IP}:4500  (also https://localhost:4500)")
-    print(f"  Backend API:  https://{LOCAL_IP}:4501/docs  (also https://127.0.0.1:4501/docs)")
-    print("  Note: If the browser warns about the local self-signed certificate,")
-    print("        click Advanced -> Proceed to open safely on your LAN.")
-    print("  Press Ctrl+C in this terminal to stop both servers.")
-    print("-" * 68 + "\n")
-
+    backend_process = None
+    frontend_process = None
     try:
+        backend_process = subprocess.Popen(
+            backend_cmd,
+            cwd=BASE_DIR,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
+        )
+
+        # Wait for backend to be ready before starting frontend (avoids ECONNREFUSED race)
+        print("  -> Waiting for backend to be ready...", end="", flush=True)
+        import ssl
+        import urllib.request
+        ssl_ctx = ssl._create_unverified_context()
+        backend_ready = False
+        for _ in range(20):  # up to 10 seconds
+            time.sleep(0.5)
+            try:
+                urllib.request.urlopen("https://127.0.0.1:4501/docs", timeout=1, context=ssl_ctx)
+                backend_ready = True
+                break
+            except Exception:
+                print(".", end="", flush=True)
+        print(" OK" if backend_ready else " (timeout, starting frontend anyway)")
+
+        print(f"  -> Starting React + Tailwind UI on https://{LOCAL_IP}:4500...")
+        # Write the backend IP and SSL paths into frontend/.env.local so Vite serves HTTPS and proxies cleanly
+        env_local_path = os.path.join(FRONTEND_DIR, ".env.local")
+        cert_env_path = cert_path.replace("\\", "/")
+        key_env_path = key_path.replace("\\", "/")
+        with open(env_local_path, "w") as f:
+            f.write(f"VITE_BACKEND_HOST={LOCAL_IP}\n")
+            f.write("VITE_BACKEND_PORT=4501\n")
+            f.write("VITE_FRONTEND_PORT=4500\n")
+            f.write("VITE_USE_HTTPS=true\n")
+            f.write(f"VITE_SSL_CERT={cert_env_path}\n")
+            f.write(f"VITE_SSL_KEY={key_env_path}\n")
+        frontend_cmd = f"{NPM_CMD} run dev"
+        frontend_process = subprocess.Popen(
+            frontend_cmd,
+            cwd=FRONTEND_DIR,
+            shell=True,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
+        )
+
+        print("\n" + "-" * 68)
+        print("  App is running over HTTPS!")
+        print(f"  Frontend UI:  https://{LOCAL_IP}:4500  (also https://localhost:4500)")
+        print(f"  Backend API:  https://{LOCAL_IP}:4501/docs  (also https://127.0.0.1:4501/docs)")
+        print("  Note: If the browser warns about the local self-signed certificate,")
+        print("        click Advanced -> Proceed to open safely on your LAN.")
+        print("  Press Ctrl+C in this terminal to stop both servers.")
+        print("-" * 68 + "\n")
+
         while True:
             time.sleep(1)
             if backend_process.poll() is not None:
@@ -517,12 +530,13 @@ def step6_start_servers(cert_path: str, key_path: str):
     except KeyboardInterrupt:
         print("\n\nShutting down backend and frontend...")
     finally:
-        if os.name == "nt":
-            subprocess.call(f"taskkill /F /T /PID {backend_process.pid}", shell=True)
-            subprocess.call(f"taskkill /F /T /PID {frontend_process.pid}", shell=True)
-        else:
-            backend_process.terminate()
-            frontend_process.terminate()
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        for proc in (backend_process, frontend_process):
+            if proc is not None and proc.poll() is None:
+                if os.name == "nt":
+                    subprocess.call(f"taskkill /F /T /PID {proc.pid}", shell=True)
+                else:
+                    proc.terminate()
         print("Both servers stopped successfully.")
 
 
@@ -559,4 +573,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nStartup cancelled.")
+        sys.exit(0)
