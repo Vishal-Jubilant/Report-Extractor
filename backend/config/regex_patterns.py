@@ -28,8 +28,8 @@ def _row_start(extra: str = "") -> str:
 
 ROW_START = {
     # DESCRIPTION column check
-    "ICICI": _row_start(r"TRFR\s+FROM"),
-    "KOTAK": _row_start(r"CASH\s+DEPOSIT|RECD:IMPS/"),
+    "ICICI": _row_start(r"TRFR\s+FROM|TRF\s*[/-]"),
+    "KOTAK": _row_start(r"CASH\s+DEPOSIT|RECD:IMPS/|FUNDS?\s+TRANSFER\s+TO\b"),
     "AXIS":  _row_start(r"TRF\s*[/-]"),
     # IDBI: also matches "BARBR52026102700758657 NAME" (UTR + name)
     "IDBI":  _row_start(r"[A-Z]{4}[A-Z0-9]\d{9,}\s|\d{4,}-[A-Z]{3}-"),
@@ -84,6 +84,9 @@ BANK_PATTERNS = {
         r"(?i)^INF/INFT/\d+/([^/]+)$",
         # TRFR FROM: G.G.M PILE FOUNDATION
         r"(?i)^TRFR\s+FROM:?\s*(.+)$",
+        # TRF/SATHYAM CREDIT SOLUTIONS /ICI  or  TRF/PRABHU/000545/ICI/27.11.2026
+        r"(?i)^TRF\s*/\s*([^/]+)",
+        r"(?i)^TRF\s*-\s*([^-]+)",
         # ICICI middle RTGS/NEFT with optional /IFSC/ACCT segments before NAME
         rf"(?i)(?<![A-Z0-9])(?:RTGS|NEFT)(?:INW)?\s*[:/-]?\s*{_REF}\s*/\s*(?:[A-Z]{{4}}0\w{{6}}\s*/\s*)?(?:\d+\s*/\s*)?([^\s/][^/]*?)(?:/|$)",
         *_MID_RTGS_NEFT_PATTERNS,
@@ -99,6 +102,8 @@ BANK_PATTERNS = {
         r"(?i)^IFT-\s*(.+?)\s*-\s*FCM",
         # Cash Deposit by Self at CHENNAI-ASHOK NAGAR
         r"(?i)^(.+?)\s+by Self\b",
+        # FUNDS TRANSFER TO FORTUNE ENTERPRISES
+        r"(?i)^FUNDS?\s+TRANSFER\s+TO\s*:?\s*(.+?)\s*$",
         # Inward (ref RTGSINW/NEFTINW): UTIBR62026102316729066 UNIQUE MARINE ACE ENTERPR
         r"(?i)^[A-Z0-9]{10,}\s+(.+)$",
         *_MID_RTGS_NEFT_PATTERNS,
